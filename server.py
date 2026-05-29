@@ -70,6 +70,7 @@ class Room:
         self.finish_count: int = 0
         self.message: str = ""
         self.host_id: str = ""
+        self.disconnect_tasks: dict[str, asyncio.Task] = {}
 
     # ── Рассылка ──────────────────────────────────────────────────────────────
     async def broadcast(self, msg: dict):
@@ -124,8 +125,38 @@ class Room:
             "host_id": self.host_id,
         }
 
+    # ── Таймаут отключения ────────────────────────────────────────────────────
+    async def handle_disconnect_timeout(self, player_id: str):
+        try:
+            await asyncio.sleep(10)
+        except asyncio.CancelledError:
+            return  # Игрок переподключился — задача отменена
+
+        self.disconnect_tasks.pop(player_id, None)
+        if player_id in self.connections:
+            return  # Успел переподключиться
+
+        player = next((p for p in self.players if p["id"] == player_id), None)
+
+        if self.phase in ("attack", "defend") and player and not player["out"]:
+            await self.surrender(player_id)
+        elif self.phase == "lobby" and player:
+            self.players = [p for p in self.players if p["id"] != player_id]
+            if self.host_id == player_id:
+                self.host_id = self.players[0]["id"] if self.players else ""
+            if self.connections:
+                await self.send_state()
+
+        # Удаляем пустую комнату
+        if not self.connections:
+            rooms.pop(self.room_id, None)
+
     # ── Вход в комнату ────────────────────────────────────────────────────────
     async def join(self, player_id: str, name: str, ws: WebSocket):
+        # Отменяем таймаут отключения если игрок переподключается
+        task = self.disconnect_tasks.pop(player_id, None)
+        if task:
+            task.cancel()
         self.connections[player_id] = ws
         # Если игрок уже есть — переподключение
         existing = next((p for p in self.players if p["id"] == player_id), None)
@@ -417,7 +448,10 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: 
 
     except WebSocketDisconnect:
         room.connections.pop(player_id, None)
+        # Даём 10 секунд на переподключение, иначе — форфейт/очистка
+        task = asyncio.create_task(room.handle_disconnect_timeout(player_id))
+        room.disconnect_tasks[player_id] = task
         await room.broadcast({
             "type": "player_disconnected",
-            "msg": f"Игрок отключился"
+            "msg": "Игрок отключился"
         })

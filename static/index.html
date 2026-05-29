@@ -289,6 +289,20 @@ function playSound(n) {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.onload = () => {
+  // Only allow players who opened the app via Telegram
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (!tg?.initDataUnsafe?.user && !isLocal) {
+    document.getElementById('s-join').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:2rem;text-align:center;gap:1.5rem">
+        <div class="logo">♠ ДУРАК ♠</div>
+        <div style="color:var(--purple);font-size:15px;line-height:1.7">
+          Игра доступна только<br>через Telegram бота.<br><br>
+          Откройте бота и нажмите<br><b style="color:var(--gold)">🃏 Создать игру</b>
+        </div>
+      </div>`;
+    return;
+  }
+
   const p = new URLSearchParams(location.search), rp = p.get('room')||'';
   if (rp) document.getElementById('inp-room').value = rp.toUpperCase();
   if (tg?.initDataUnsafe?.user) {
@@ -296,7 +310,7 @@ window.onload = () => {
     document.getElementById('inp-name').value = u.first_name||u.username||'';
     myId = String(u.id);
   } else {
-    myId = 'user_'+Math.random().toString(36).slice(2,8);
+    myId = 'user_'+Math.random().toString(36).slice(2,8); // localhost dev
   }
   initDragListeners();
 };
@@ -509,8 +523,10 @@ function initDragListeners() {
 }
 
 function getXY(e) {
-  const t = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
-  return { x: t.clientX, y: t.clientY };
+  // touchend: touches is empty, must use changedTouches
+  if (e.changedTouches?.length) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  if (e.touches?.length)        return { x: e.touches[0].clientX,        y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
 }
 
 function onDragPointerDown(e) {
