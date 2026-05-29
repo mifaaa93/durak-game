@@ -13,8 +13,8 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "ВАШ_ТОКЕН_ЗДЕСЬ")
-SERVER_URL = os.getenv("SERVER_URL", "https://ваш-сервер.railway.app")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8849583992:AAGhnFbaokH4evsWAKljFMnX1CKM4Ws-Zt4")
+SERVER_URL = os.getenv("SERVER_URL", "https://durak-game-production-affa.up.railway.app")
 MINI_APP_URL = os.getenv("MINI_APP_URL", SERVER_URL)  # URL Mini App (обычно тот же сервер)
 
 

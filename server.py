@@ -260,8 +260,9 @@ class Room:
             return await self._err(player_id, "Есть неотбитые карты!")
         self.pairs = []
         old_def_idx = self.defender_idx
-        self.attacker_idx = self._next_active(old_def_idx)
-        self.defender_idx = self._next_active(self.attacker_idx)
+        # After successful defense the defender becomes the new attacker
+        self.attacker_idx = old_def_idx
+        self.defender_idx = self._next_active(old_def_idx)
         self.phase = "attack"
         self._refill()
         self._check_win()
