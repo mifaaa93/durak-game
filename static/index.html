@@ -110,7 +110,7 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
 }
 .card-def {
   position:absolute; top:26px; left:8px;
-  transform:rotate(-7deg); z-index:2;
+  transform:rotate(7deg); z-index:2;
   box-shadow:0 0 0 2px var(--blue), 3px 6px 14px rgba(0,0,0,.55);
   animation:defIn .22s ease-out;
 }
@@ -134,7 +134,7 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
 /* ── GHOST (follows finger) ──────── */
 .card-ghost {
   position:fixed; z-index:1000; pointer-events:none;
-  opacity:.9; transform:scale(1.12) rotate(4deg);
+  opacity:.9; transform:scale(1.12) rotate(-4deg);
   animation:none !important; transition:none !important;
   box-shadow:0 10px 28px rgba(0,0,0,.55);
   will-change:left,top;
@@ -149,7 +149,7 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
 
 /* ── ANIMATIONS ──────────────────── */
 @keyframes atkIn  { from{transform:scale(.75) translateY(-14px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
-@keyframes defIn  { from{transform:rotate(-16deg) scale(.8) translateY(-10px);opacity:.4} to{transform:rotate(-7deg) scale(1) translateY(0);opacity:1} }
+@keyframes defIn  { from{transform:rotate(16deg) scale(.8) translateY(-10px);opacity:.4} to{transform:rotate(7deg) scale(1) translateY(0);opacity:1} }
 @keyframes handIn { from{transform:scale(.8) translateY(8px);opacity:.5} to{transform:scale(1) translateY(0);opacity:1} }
 
 /* ── UI BARS ─────────────────────── */
@@ -530,6 +530,9 @@ function getXY(e) {
 }
 
 function onDragPointerDown(e) {
+  // Cancel any existing drag first (handles simultaneous multi-touch)
+  cancelDrag();
+
   const cardEl = e.target.closest('.card-hand');
   if (!cardEl) return;
   if (cardEl.classList.contains('dim')) return;
@@ -549,7 +552,6 @@ function onDragPointerDown(e) {
   drag = { card: me.hand[idx], idx, role: amAtt?'attacker':'defender',
            startX:x, startY:y, active:false, ghostEl:null, srcEl:cardEl };
 
-  // Prevent scroll from starting immediately on touch
   if (e.touches) e.preventDefault();
 }
 
@@ -637,10 +639,13 @@ function onDragPointerUp(e) {
 }
 
 function cleanupDragVisuals() {
-  if (drag?.ghostEl) { drag.ghostEl.remove(); drag.ghostEl=null; }
+  // Remove ALL ghost elements — guards against orphaned ghosts from multi-touch
+  document.querySelectorAll('.card-ghost').forEach(el => el.remove());
   if (drag?.srcEl) drag.srcEl.classList.remove('is-dragging');
+  // Also sweep all hand cards for the class in case srcEl reference is stale
+  document.querySelectorAll('.card-hand.is-dragging').forEach(el => el.classList.remove('is-dragging'));
   document.getElementById('table-zone')?.classList.remove('drop-target');
-  document.querySelectorAll('.card-atk').forEach(el=>el.classList.remove('drop-hover'));
+  document.querySelectorAll('.card-atk').forEach(el => el.classList.remove('drop-hover'));
 }
 
 function cancelDrag() {
