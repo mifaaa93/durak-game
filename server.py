@@ -108,8 +108,8 @@ class Room:
                 "out": p["out"],
                 "finish_pos": p["finish_pos"],
             })
-        attacker = self.players[self.attacker_idx] if self.players else {}
-        defender = self.players[self.defender_idx] if self.players else {}
+        attacker = self.players[self.attacker_idx] if self.players and self.attacker_idx < len(self.players) else {}
+        defender = self.players[self.defender_idx] if self.players and self.defender_idx < len(self.players) else {}
         return {
             "room_id": self.room_id,
             "phase": self.phase,
