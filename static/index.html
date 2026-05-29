@@ -6,16 +6,16 @@
 <title>Дурак</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
 :root {
-  --bg: #0f0820; --bg2: #1a0f35;
-  --gold: #e8c84a; --gold2: #f5d55a;
-  --purple: #9a7fb5; --blue: #7eb8f5;
-  --red: #e57373; --text: #f0e6d3;
-  --border: rgba(255,255,255,0.1);
-  --cw: 52px; --ch: 74px;
+  --bg:#0f0820; --bg2:#1a0f35;
+  --gold:#e8c84a; --gold2:#f5d55a;
+  --purple:#9a7fb5; --blue:#7eb8f5;
+  --red:#e57373; --text:#f0e6d3;
+  --border:rgba(255,255,255,0.1);
+  --cw:52px; --ch:74px;
 }
-body { font-family: -apple-system,'Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
 
 /* ── SCREENS ─────────────────────── */
 .screen { display:none; min-height:100vh; flex-direction:column; }
@@ -65,53 +65,52 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background:var(--
 .opp-role { font-size:9px; color:var(--gold); height:12px; }
 
 /* ── TABLE ───────────────────────── */
-.table-zone { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 8px; min-height:160px; overflow:visible; }
+.table-zone {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:12px 8px; min-height:160px; overflow:visible;
+  border-radius:12px; transition:background .15s, box-shadow .15s;
+}
+.table-zone.drop-target {
+  background:rgba(126,184,245,.07);
+  box-shadow:inset 0 0 0 2px rgba(126,184,245,.4);
+}
 .table-empty { font-size:12px; color:rgba(154,127,181,.35); letter-spacing:2px; text-transform:uppercase; }
 .pairs-wrap { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:flex-start; }
 
 /* ── CARD BASE ───────────────────── */
-/* rank/suit in top-left so overlapping cards are always readable */
 .card {
   position:relative;
   width:var(--cw); height:var(--ch);
   border-radius:7px; border:1.5px solid rgba(0,0,0,.12);
-  flex-shrink:0; cursor:pointer; user-select:none;
+  flex-shrink:0; user-select:none;
 }
 .card.red  { background:#fff5f5; color:#c0392b; }
 .card.black { background:#f5f5f0; color:#1a1a2e; }
 .card.trump { box-shadow:0 0 0 2px var(--gold); }
-.card.dim  { opacity:.42; cursor:default; }
-
-.card-rank {
-  position:absolute; top:3px; left:5px;
-  font-size:13px; font-weight:800; line-height:1;
-}
-.card-suit {
-  position:absolute; top:19px; left:5px;
-  font-size:14px; line-height:1;
-}
+.card.dim  { opacity:.4; cursor:default; }
+/* rank/suit top-left so overlapping cards always show their value */
+.card-rank { position:absolute; top:3px; left:5px; font-size:13px; font-weight:800; line-height:1; }
+.card-suit { position:absolute; top:19px; left:5px; font-size:14px; line-height:1; }
 
 /* ── PAIR on table ───────────────── */
-/* Fixed-size container so absolute children never clip */
-.pair {
-  position:relative;
-  width:68px; height:108px;
-  flex-shrink:0;
-}
-/* Attack card: top-left of pair */
+.pair { position:relative; width:68px; height:108px; flex-shrink:0; }
 .card-atk {
   position:absolute; top:0; left:0;
   animation:atkIn .22s ease-out;
-  transition:opacity .2s;
+  transition:transform .12s, box-shadow .12s, opacity .2s;
+  cursor:default;
 }
 .card-atk.beaten { opacity:.55; }
-.card-atk.clickable { cursor:pointer; box-shadow:0 0 10px rgba(126,184,245,.6); }
-
-/* Defend card: offset + slight rotation — top-left text always visible */
+/* tappable for defender (tap-tap flow) */
+.card-atk.tappable { cursor:pointer; box-shadow:0 0 10px rgba(126,184,245,.55); }
+/* drag hover highlight */
+.card-atk.drop-hover {
+  transform:scale(1.08);
+  box-shadow:0 0 16px rgba(126,184,245,.85), 0 0 0 2.5px var(--blue);
+}
 .card-def {
   position:absolute; top:26px; left:8px;
-  transform:rotate(-7deg);
-  z-index:2;
+  transform:rotate(-7deg); z-index:2;
   box-shadow:0 0 0 2px var(--blue), 3px 6px 14px rgba(0,0,0,.55);
   animation:defIn .22s ease-out;
 }
@@ -119,41 +118,52 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background:var(--
 
 /* ── HAND cards ──────────────────── */
 .card-hand {
-  transition:transform .13s, box-shadow .13s;
+  cursor:grab; transition:transform .13s, box-shadow .13s, opacity .15s;
   animation:handIn .18s ease-out;
+  -webkit-touch-callout:none;
 }
+.card-hand:active { cursor:grabbing; }
 .card-hand.selected {
   transform:translateY(-10px) !important;
   box-shadow:0 0 0 2px var(--gold), 0 12px 20px rgba(232,200,74,.3);
 }
+.card-hand.dim { cursor:default; }
+/* source card fades during drag */
+.card-hand.is-dragging { opacity:.25; }
+
+/* ── GHOST (follows finger) ──────── */
+.card-ghost {
+  position:fixed; z-index:1000; pointer-events:none;
+  opacity:.9; transform:scale(1.12) rotate(4deg);
+  animation:none !important; transition:none !important;
+  box-shadow:0 10px 28px rgba(0,0,0,.55);
+  will-change:left,top;
+}
+
+/* ── DRAG HINT ───────────────────── */
+.drag-hint {
+  font-size:11px; color:var(--blue); text-align:center;
+  padding:4px 8px; border-radius:6px; background:rgba(126,184,245,.08);
+  border:1px solid rgba(126,184,245,.2); margin:4px 10px 0;
+}
 
 /* ── ANIMATIONS ──────────────────── */
-@keyframes atkIn {
-  from { transform:scale(.75) translateY(-14px); opacity:0; }
-  to   { transform:scale(1)   translateY(0);      opacity:1; }
-}
-@keyframes defIn {
-  from { transform:rotate(-16deg) scale(.8) translateY(-10px); opacity:.4; }
-  to   { transform:rotate(-7deg)  scale(1)  translateY(0);     opacity:1; }
-}
-@keyframes handIn {
-  from { transform:scale(.8) translateY(8px); opacity:.5; }
-  to   { transform:scale(1)  translateY(0);   opacity:1; }
-}
+@keyframes atkIn  { from{transform:scale(.75) translateY(-14px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+@keyframes defIn  { from{transform:rotate(-16deg) scale(.8) translateY(-10px);opacity:.4} to{transform:rotate(-7deg) scale(1) translateY(0);opacity:1} }
+@keyframes handIn { from{transform:scale(.8) translateY(8px);opacity:.5} to{transform:scale(1) translateY(0);opacity:1} }
 
 /* ── UI BARS ─────────────────────── */
 .msg-bar { padding:6px 12px; font-size:12px; text-align:center; color:var(--gold); background:rgba(232,200,74,.06); border-top:1px solid rgba(232,200,74,.1); min-height:30px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.defend-hint { font-size:11px; color:var(--blue); text-align:center; padding:4px 8px; border-radius:6px; background:rgba(126,184,245,.08); border:1px solid rgba(126,184,245,.2); margin:4px 10px 0; }
-
 .actions-bar { display:flex; gap:6px; padding:8px 10px; flex-wrap:wrap; background:rgba(0,0,0,.2); border-top:1px solid var(--border); flex-shrink:0; }
 .action-btn { padding:8px 14px; border-radius:8px; border:1px solid; cursor:pointer; font-size:13px; font-weight:700; flex:1; min-width:80px; background:transparent; transition:all .12s; }
-.btn-red  { color:var(--red);    border-color:var(--red); }
-.btn-red:active  { background:rgba(229,115,115,.15); }
-.btn-blue { color:var(--blue);   border-color:var(--blue); }
-.btn-blue:active { background:rgba(126,184,245,.15); }
-.btn-ghost{ color:var(--purple); border-color:rgba(154,127,181,.3); }
-.btn-ghost:active{ background:rgba(154,127,181,.1); }
+.btn-red   { color:var(--red);    border-color:var(--red); }
+.btn-red:active   { background:rgba(229,115,115,.15); }
+.btn-blue  { color:var(--blue);   border-color:var(--blue); }
+.btn-blue:active  { background:rgba(126,184,245,.15); }
+.btn-ghost { color:var(--purple); border-color:rgba(154,127,181,.3); }
+.btn-ghost:active { background:rgba(154,127,181,.1); }
 .action-btn:disabled { opacity:.3; cursor:default; }
+.surr-confirm { font-size:12px; color:var(--red); font-weight:700; display:flex; align-items:center; padding:0 4px; }
 
 .my-hand-area { padding:8px 6px 10px; background:rgba(0,0,0,.25); border-top:1px solid var(--border); flex-shrink:0; }
 .hand-label { font-size:10px; letter-spacing:2px; color:rgba(154,127,181,.55); margin-bottom:6px; padding-left:4px; text-transform:uppercase; }
@@ -172,9 +182,6 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background:var(--
 /* ── TOAST ───────────────────────── */
 .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(20,10,40,.95); border:1px solid rgba(232,200,74,.3); color:var(--gold); padding:8px 18px; border-radius:8px; font-size:13px; pointer-events:none; opacity:0; transition:opacity .2s; z-index:999; white-space:nowrap; }
 .toast.show { opacity:1; }
-
-/* ── SURRENDER CONFIRM ───────────── */
-.surr-confirm { font-size:12px; color:var(--red); font-weight:700; display:flex; align-items:center; padding:0 4px; }
 </style>
 </head>
 <body>
@@ -215,7 +222,7 @@ body { font-family: -apple-system,'Helvetica Neue',sans-serif; background:var(--
   <div class="opponents-row" id="opponents-row"></div>
   <div class="table-zone" id="table-zone"><div class="table-empty">Стол пуст</div></div>
   <div class="msg-bar" id="msg-bar"></div>
-  <div id="defend-hint-bar"></div>
+  <div id="hint-bar"></div>
   <div class="actions-bar" id="actions-bar"></div>
   <div class="my-hand-area">
     <div class="hand-label" id="hand-label">Ваши карты</div>
@@ -242,9 +249,14 @@ if (tg) { tg.expand(); tg.ready(); }
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let ws = null, myId = null, myName = '', roomId = '';
 let gameState = null;
-let selectedHandCard = null;
+let selectedHandCard = null;   // defender tap-tap selection
 let surrenderConfirm = false;
 let prevPairsSig = null, prevPhase = null;
+
+// ── DRAG STATE ────────────────────────────────────────────────────────────────
+const DRAG_THRESHOLD = 7; // px before drag activates
+let drag = null;
+// drag = { card, idx, role:'attacker'|'defender', startX, startY, active, ghostEl, srcEl }
 
 // ── AUDIO ─────────────────────────────────────────────────────────────────────
 let audioCtx = null;
@@ -281,11 +293,12 @@ window.onload = () => {
   if (rp) document.getElementById('inp-room').value = rp.toUpperCase();
   if (tg?.initDataUnsafe?.user) {
     const u = tg.initDataUnsafe.user;
-    document.getElementById('inp-name').value = u.first_name || u.username || '';
+    document.getElementById('inp-name').value = u.first_name||u.username||'';
     myId = String(u.id);
   } else {
-    myId = 'user_' + Math.random().toString(36).slice(2,8);
+    myId = 'user_'+Math.random().toString(36).slice(2,8);
   }
+  initDragListeners();
 };
 
 // ── CONNECT ───────────────────────────────────────────────────────────────────
@@ -317,22 +330,22 @@ function handleMsg(msg) {
 
 function applyState() {
   const s = gameState;
-  surrenderConfirm = false; // reset on every server update
+  cancelDrag();
+  surrenderConfirm = false;
 
   // Sound detection
   const sig = JSON.stringify((s.pairs||[]).map(p=>({
-    a: p.attack ? p.attack.rank+p.attack.suit : '',
-    d: p.defend ? p.defend.rank+p.defend.suit : ''
+    a: p.attack?p.attack.rank+p.attack.suit:'',
+    d: p.defend?p.defend.rank+p.defend.suit:''
   })));
   if (prevPairsSig !== null) {
     const prev=JSON.parse(prevPairsSig), curr=JSON.parse(sig);
     if (prevPhase==='lobby' && s.phase==='attack') playSound('deal');
-    else if (curr.length > prev.length) playSound('attack');
+    else if (curr.length>prev.length) playSound('attack');
     else if (curr.length>0 && curr.length===prev.length && curr.some((c,i)=>c.d&&(!prev[i]||!prev[i].d))) playSound('defend');
     else if (curr.length===0 && prev.length>0) playSound(s.message?.includes('взял')?'take':'deal');
   }
-  prevPairsSig = sig;
-  prevPhase = s.phase;
+  prevPairsSig=sig; prevPhase=s.phase;
 
   if (s.phase==='lobby') { renderLobby(); return; }
   if (s.phase==='end')   { renderEnd();   return; }
@@ -345,9 +358,9 @@ function applyState() {
 // ── LOBBY ─────────────────────────────────────────────────────────────────────
 function renderLobby() {
   showScreen('s-lobby');
-  const s = gameState;
-  document.getElementById('lobby-room-id').textContent = 'Комната: '+s.room_id;
-  document.getElementById('player-list').innerHTML = s.players.map(p=>`
+  const s=gameState;
+  document.getElementById('lobby-room-id').textContent='Комната: '+s.room_id;
+  document.getElementById('player-list').innerHTML=s.players.map(p=>`
     <div class="player-item">
       <div class="player-avatar">${p.name[0].toUpperCase()}</div>
       <div class="player-info">
@@ -355,9 +368,9 @@ function renderLobby() {
         <div class="player-tag">${p.id===s.host_id?'👑 Хост':'Игрок'}</div>
       </div>
     </div>`).join('');
-  const isHost = s.host_id===myId;
-  document.getElementById('btn-start').style.display = isHost&&s.players.length>=2?'block':'none';
-  document.getElementById('lobby-hint').textContent =
+  const isHost=s.host_id===myId;
+  document.getElementById('btn-start').style.display=isHost&&s.players.length>=2?'block':'none';
+  document.getElementById('lobby-hint').textContent=
     isHost?(s.players.length<2?'Ждём ещё игроков...':'Можно начинать!'):'Ждём хоста...';
 }
 function startGame() { send({action:'start'}); }
@@ -365,16 +378,16 @@ function startGame() { send({action:'start'}); }
 // ── GAME RENDER ───────────────────────────────────────────────────────────────
 function renderTopBar() {
   const s=gameState, tc=s.trump_card;
-  document.getElementById('trump-icon').textContent = tc?tc.rank+tc.suit:'—';
-  document.getElementById('deck-num').textContent = s.deck_count;
+  document.getElementById('trump-icon').textContent=tc?tc.rank+tc.suit:'—';
+  document.getElementById('deck-num').textContent=s.deck_count;
   const att=s.players.find(p=>p.id===s.attacker_id);
   const def=s.players.find(p=>p.id===s.defender_id);
-  document.getElementById('turn-text').textContent = (att?.name||'?')+' → '+(def?.name||'?');
+  document.getElementById('turn-text').textContent=(att?.name||'?')+' → '+(def?.name||'?');
 }
 
 function renderOpponents() {
   const s=gameState;
-  document.getElementById('opponents-row').innerHTML = s.players.map(p=>{
+  document.getElementById('opponents-row').innerHTML=s.players.map(p=>{
     let cls='opp-chip';
     if(p.out) cls+=' is-out';
     else if(p.id===s.attacker_id) cls+=' is-attacker';
@@ -391,22 +404,27 @@ function renderOpponents() {
 function renderTable() {
   const s=gameState;
   const zone=document.getElementById('table-zone');
-  const hintBar=document.getElementById('defend-hint-bar');
+  const hintBar=document.getElementById('hint-bar');
   if (!s.pairs||s.pairs.length===0) {
     zone.innerHTML='<div class="table-empty">Стол пуст</div>';
     hintBar.innerHTML=''; return;
   }
-  const canDefend = myId===s.defender_id && s.phase==='defend' && selectedHandCard;
-  hintBar.innerHTML = canDefend ? '<div class="defend-hint">Нажмите на карту которую хотите отбить</div>' : '';
+  // Defender tap-tap hint
+  const amDef=myId===s.defender_id;
+  const tapDefend=amDef&&s.phase==='defend'&&selectedHandCard;
+  hintBar.innerHTML=tapDefend?'<div class="drag-hint">Нажмите или перетащите на карту которую хотите отбить</div>':'';
 
-  zone.innerHTML = '<div class="pairs-wrap">' + s.pairs.map((pair,i)=>{
-    const hasDef = !!pair.defend;
-    const isClick = canDefend && !hasDef;
-    let aCls = 'card '+clr(pair.attack)+' card-atk'+(hasDef?' beaten':'')+(isClick?' clickable':'');
+  zone.innerHTML='<div class="pairs-wrap">'+s.pairs.map((pair,i)=>{
+    const hasDef=!!pair.defend;
+    // Attack card is tappable for defender when they have a card selected (tap-tap flow)
+    const isTappable=tapDefend&&!hasDef;
+    let aCls='card '+clr(pair.attack)+' card-atk'+(hasDef?' beaten':'')+(isTappable?' tappable':'');
     if(trump(pair.attack)) aCls+=' trump';
-    const aClick = isClick ? `onclick="onTableClick(${i})"` : '';
-    const aHtml = `<div class="${aCls}" ${aClick}><div class="card-rank">${esc(pair.attack.rank)}</div><div class="card-suit">${pair.attack.suit}</div></div>`;
-
+    const aClick=isTappable?`onclick="onTableTap(${i})"` : '';
+    const aHtml=`<div class="${aCls}" ${aClick} data-pair="${i}">
+      <div class="card-rank">${esc(pair.attack.rank)}</div>
+      <div class="card-suit">${pair.attack.suit}</div>
+    </div>`;
     let dHtml='';
     if (hasDef) {
       let dCls='card '+clr(pair.defend)+' card-def';
@@ -414,30 +432,26 @@ function renderTable() {
       dHtml=`<div class="${dCls}"><div class="card-rank">${esc(pair.defend.rank)}</div><div class="card-suit">${pair.defend.suit}</div></div>`;
     }
     return `<div class="pair">${aHtml}${dHtml}</div>`;
-  }).join('') + '</div>';
+  }).join('')+'</div>';
 }
-
-function clr(c) { return(c.suit==='♥'||c.suit==='♦')?'red':'black'; }
-function trump(c) { return gameState&&c.suit===gameState.trump_suit; }
 
 function renderHand() {
   const s=gameState, me=s.players.find(p=>p.id===myId);
   if (!me) return;
-  document.getElementById('hand-label').textContent = me.name+' — '+me.card_count+' карт';
+  document.getElementById('hand-label').textContent=me.name+' — '+me.card_count+' карт';
   const row=document.getElementById('hand-row');
   if (!me.hand||me.hand.length===0) {
     row.innerHTML='<span style="color:var(--purple);font-size:12px">Нет карт</span>'; return;
   }
   const amAtt=myId===s.attacker_id, amDef=myId===s.defender_id;
-  // Attacker can throw cards in both attack and defend phases
-  const active = (amAtt&&(s.phase==='attack'||s.phase==='defend')) || (amDef&&s.phase==='defend');
-  row.innerHTML = me.hand.map((card,i)=>{
-    const sel = selectedHandCard&&card.rank===selectedHandCard.rank&&card.suit===selectedHandCard.suit;
+  const active=(amAtt&&(s.phase==='attack'||s.phase==='defend'))||(amDef&&s.phase==='defend');
+  row.innerHTML=me.hand.map((card,i)=>{
+    const sel=selectedHandCard&&card.rank===selectedHandCard.rank&&card.suit===selectedHandCard.suit;
     let cls='card '+clr(card)+' card-hand';
     if(trump(card)) cls+=' trump';
     if(sel) cls+=' selected';
     if(!active) cls+=' dim';
-    return `<div class="${cls}" onclick="onHandClick(${i})">
+    return `<div class="${cls}" data-hidx="${i}">
       <div class="card-rank">${esc(card.rank)}</div>
       <div class="card-suit">${card.suit}</div>
     </div>`;
@@ -453,21 +467,18 @@ function renderActions() {
 
   if (amDef)
     addBtn(bar,'🤚 Взять карты','btn-red',()=>send({action:'take'}));
-
-  if (amAtt && s.phase==='attack' && s.pairs&&s.pairs.length>0 && undefended===0)
+  if (amAtt&&s.phase==='attack'&&s.pairs&&s.pairs.length>0&&undefended===0)
     addBtn(bar,'✓ Завершить ход','btn-blue',()=>{selectedHandCard=null;send({action:'end_turn'});});
-
-  // Cancel selection
-  if (selectedHandCard && ((amAtt&&(s.phase==='attack'||s.phase==='defend'))||(amDef&&s.phase==='defend')))
+  // Cancel tap selection (defender only)
+  if (selectedHandCard&&amDef&&s.phase==='defend')
     addBtn(bar,'Отмена','btn-ghost',()=>{selectedHandCard=null;renderHand();renderTable();renderActions();});
 
-  // Surrender button with two-step confirmation
-  if (me && !me.out) {
+  if (me&&!me.out) {
     if (surrenderConfirm) {
       const lbl=document.createElement('span');
       lbl.className='surr-confirm'; lbl.textContent='Сдаться?';
       bar.appendChild(lbl);
-      addBtn(bar,'Да, сдаюсь','btn-red',()=>{surrenderConfirm=false;send({action:'surrender'});});
+      addBtn(bar,'Да','btn-red',()=>{surrenderConfirm=false;send({action:'surrender'});});
       addBtn(bar,'Нет','btn-ghost',()=>{surrenderConfirm=false;renderActions();});
     } else {
       addBtn(bar,'🏳️ Сдаться','btn-ghost',()=>{surrenderConfirm=true;renderActions();});
@@ -480,29 +491,167 @@ function addBtn(bar,text,cls,fn) {
   b.className='action-btn '+cls; b.textContent=text; b.onclick=fn; bar.appendChild(b);
 }
 
-// ── INTERACTIONS ──────────────────────────────────────────────────────────────
-function onHandClick(idx) {
-  const s=gameState, me=s.players.find(p=>p.id===myId);
-  if (!me||!me.hand) return;
-  const card=me.hand[idx];
-  const amAtt=myId===s.attacker_id, amDef=myId===s.defender_id;
+// ── DRAG SYSTEM ───────────────────────────────────────────────────────────────
+function initDragListeners() {
+  // Pointer starts on a hand card
+  const handRow = document.getElementById('hand-row');
 
-  if (amAtt && (s.phase==='attack'||s.phase==='defend')) {
-    // Attacker always sends attack action (server validates rank match)
-    selectedHandCard=null;
-    send({action:'attack',card});
-  } else if (amDef && s.phase==='defend') {
-    selectedHandCard = (selectedHandCard?.rank===card.rank&&selectedHandCard?.suit===card.suit)?null:card;
+  // Use event delegation on hand-row so it works after innerHTML changes
+  // We attach to the static container — listeners persist across renders
+  handRow.addEventListener('mousedown', onDragPointerDown);
+  handRow.addEventListener('touchstart', onDragPointerDown, { passive: false });
+
+  document.addEventListener('mousemove', onDragPointerMove);
+  document.addEventListener('touchmove', onDragPointerMove, { passive: false });
+  document.addEventListener('mouseup', onDragPointerUp);
+  document.addEventListener('touchend', onDragPointerUp);
+  document.addEventListener('touchcancel', cancelDrag);
+}
+
+function getXY(e) {
+  const t = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
+  return { x: t.clientX, y: t.clientY };
+}
+
+function onDragPointerDown(e) {
+  const cardEl = e.target.closest('.card-hand');
+  if (!cardEl) return;
+  if (cardEl.classList.contains('dim')) return;
+
+  const s = gameState;
+  if (!s) return;
+  const amAtt = myId===s.attacker_id, amDef = myId===s.defender_id;
+  if (!amAtt && !amDef) return;
+  if (amAtt && s.phase!=='attack' && s.phase!=='defend') return;
+  if (amDef && s.phase!=='defend') return;
+
+  const idx = parseInt(cardEl.dataset.hidx);
+  const me = s.players.find(p=>p.id===myId);
+  if (!me||!me.hand||idx>=me.hand.length) return;
+
+  const {x,y} = getXY(e);
+  drag = { card: me.hand[idx], idx, role: amAtt?'attacker':'defender',
+           startX:x, startY:y, active:false, ghostEl:null, srcEl:cardEl };
+
+  // Prevent scroll from starting immediately on touch
+  if (e.touches) e.preventDefault();
+}
+
+function onDragPointerMove(e) {
+  if (!drag) return;
+  const {x,y} = getXY(e);
+  const dx = x-drag.startX, dy = y-drag.startY;
+
+  if (!drag.active) {
+    if (Math.sqrt(dx*dx+dy*dy) < DRAG_THRESHOLD) return;
+    drag.active = true;
+    // Create ghost
+    drag.ghostEl = document.createElement('div');
+    drag.ghostEl.className = 'card '+clr(drag.card)+' card-ghost';
+    if (trump(drag.card)) drag.ghostEl.className += ' trump';
+    drag.ghostEl.innerHTML = `<div class="card-rank">${esc(drag.card.rank)}</div><div class="card-suit">${drag.card.suit}</div>`;
+    document.body.appendChild(drag.ghostEl);
+    drag.srcEl.classList.add('is-dragging');
+
+    // Show table zone as drop target for attacker
+    if (drag.role==='attacker')
+      document.getElementById('table-zone').classList.add('drop-target');
+  }
+
+  if (drag.active) {
+    e.preventDefault();
+    // Center ghost on finger (card is 52×74)
+    drag.ghostEl.style.left = (x-26)+'px';
+    drag.ghostEl.style.top  = (y-37)+'px';
+
+    // Highlight drop target for defender
+    if (drag.role==='defender') highlightDefendTarget(x, y);
+  }
+}
+
+function highlightDefendTarget(x, y) {
+  document.querySelectorAll('.card-atk').forEach(el=>el.classList.remove('drop-hover'));
+  // Temporarily hide ghost to hit-test elements below
+  drag.ghostEl.style.display='none';
+  const el = document.elementFromPoint(x, y);
+  drag.ghostEl.style.display='';
+  const atkEl = el?.closest?.('.card-atk');
+  if (atkEl && !atkEl.classList.contains('beaten'))
+    atkEl.classList.add('drop-hover');
+}
+
+function onDragPointerUp(e) {
+  if (!drag) return;
+  const {x,y} = getXY(e);
+
+  if (!drag.active) {
+    // It was a tap — route to tap handler
+    cleanupDragVisuals();
+    const d = drag; drag = null;
+    onHandTap(d);
+    return;
+  }
+
+  // Drag ended — check drop target
+  if (drag.ghostEl) { drag.ghostEl.style.display='none'; } // hide for hit-test
+  const el = document.elementFromPoint(x, y);
+  if (drag.ghostEl) drag.ghostEl.style.display='';
+
+  if (drag.role==='attacker') {
+    const zone = document.getElementById('table-zone');
+    const rect = zone.getBoundingClientRect();
+    if (x>=rect.left && x<=rect.right && y>=rect.top && y<=rect.bottom) {
+      send({ action:'attack', card:drag.card });
+    }
+  } else {
+    // Defender: find which attack card
+    const atkEl = el?.closest?.('.card-atk');
+    if (atkEl && !atkEl.classList.contains('beaten')) {
+      const pairIdx = parseInt(atkEl.dataset.pair);
+      const pair = gameState?.pairs?.[pairIdx];
+      if (pair && !pair.defend) {
+        send({ action:'defend', attack_card:pair.attack, defend_card:drag.card });
+        selectedHandCard = null;
+      }
+    }
+  }
+
+  cleanupDragVisuals();
+  drag = null;
+}
+
+function cleanupDragVisuals() {
+  if (drag?.ghostEl) { drag.ghostEl.remove(); drag.ghostEl=null; }
+  if (drag?.srcEl) drag.srcEl.classList.remove('is-dragging');
+  document.getElementById('table-zone')?.classList.remove('drop-target');
+  document.querySelectorAll('.card-atk').forEach(el=>el.classList.remove('drop-hover'));
+}
+
+function cancelDrag() {
+  cleanupDragVisuals();
+  drag = null;
+}
+
+// ── TAP HANDLERS ──────────────────────────────────────────────────────────────
+
+// Called when a hand card was tapped (not dragged)
+function onHandTap(d) {
+  const s = gameState;
+  const amDef = myId===s.defender_id;
+  // Attacker: taps do nothing — must drag to play
+  if (d.role==='defender' && s.phase==='defend') {
+    selectedHandCard = (selectedHandCard?.rank===d.card.rank&&selectedHandCard?.suit===d.card.suit)?null:d.card;
     renderHand(); renderTable(); renderActions();
   }
 }
 
-function onTableClick(pairIdx) {
+// Defender taps an attack card on the table (tap-tap flow)
+function onTableTap(pairIdx) {
   if (!selectedHandCard) { toast('Сначала выберите карту в руке'); return; }
-  const pair=gameState.pairs[pairIdx];
+  const pair = gameState?.pairs?.[pairIdx];
   if (!pair||pair.defend) { toast('Эта карта уже отбита'); return; }
-  send({action:'defend',attack_card:pair.attack,defend_card:selectedHandCard});
-  selectedHandCard=null;
+  send({ action:'defend', attack_card:pair.attack, defend_card:selectedHandCard });
+  selectedHandCard = null;
 }
 
 // ── END ───────────────────────────────────────────────────────────────────────
@@ -510,12 +659,11 @@ function renderEnd() {
   playSound('win');
   showScreen('s-end');
   const s=gameState;
-  // Sort ascending: lowest finish_pos = winner, highest = дурак
   const sorted=[...s.players].sort((a,b)=>(a.finish_pos||9999)-(b.finish_pos||9999));
   const loser=sorted[sorted.length-1];
-  document.getElementById('end-sub').textContent = loser ? '🃏 Дурак: '+loser.name : '';
+  document.getElementById('end-sub').textContent=loser?'🃏 Дурак: '+loser.name:'';
   const medals=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
-  document.getElementById('rank-list').innerHTML = sorted.map((p,i)=>`
+  document.getElementById('rank-list').innerHTML=sorted.map((p,i)=>`
     <div class="rank-row">
       <span class="rank-medal">${medals[i]||'•'}</span>
       <span class="rank-name">${esc(p.name)}${p.id===myId?' (вы)':''}</span>
@@ -536,6 +684,8 @@ function toast(msg) {
   setTimeout(()=>t.classList.remove('show'),2200);
 }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function clr(c) { return(c.suit==='♥'||c.suit==='♦')?'red':'black'; }
+function trump(c) { return gameState&&c.suit===gameState.trump_suit; }
 </script>
 </body>
 </html>
