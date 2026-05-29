@@ -330,6 +330,19 @@ class Room:
         self.message = f"{player['name']} сдался!"
         await self.send_state()
 
+    # ── Покинуть лобби ───────────────────────────────────────────────────────
+    async def leave_room(self, player_id: str):
+        if self.phase != "lobby":
+            return
+        self.players = [p for p in self.players if p["id"] != player_id]
+        self.connections.pop(player_id, None)
+        if self.host_id == player_id:
+            self.host_id = self.players[0]["id"] if self.players else ""
+        if not self.players:
+            rooms.pop(self.room_id, None)
+        else:
+            await self.send_state()
+
     # ── Подброс (переход обратно в атаку) ────────────────────────────────────
     async def throw_more(self, player_id: str):
         attacker = self.players[self.attacker_idx]
@@ -411,6 +424,19 @@ async def room_exists(room_id: str):
     return {"exists": room_id in rooms}
 
 
+@app.get("/rooms")
+async def list_rooms():
+    result = []
+    for room_id, room in rooms.items():
+        if room.phase == "lobby":
+            result.append({
+                "room_id": room_id,
+                "player_count": len(room.players),
+                "max_players": room.max_players,
+            })
+    return result
+
+
 # ── WebSocket ────────────────────────────────────────────────────────────────
 @app.websocket("/ws/{room_id}/{player_id}/{name}")
 async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: str):
@@ -443,6 +469,9 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: 
                 await room.throw_more(player_id)
             elif action == "surrender":
                 await room.surrender(player_id)
+            elif action == "leave_room":
+                await room.leave_room(player_id)
+                break
             elif action == "ping":
                 await ws.send_text(json.dumps({"type": "pong"}))
 

@@ -179,6 +179,28 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
 .rank-name { flex:1; font-size:14px; text-align:left; }
 .rank-tag { font-size:11px; color:var(--purple); }
 
+/* ── DECK WIDGET ─────────────────── */
+.deck-widget { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.deck-trump-mini { width:32px; height:46px; position:relative; flex-shrink:0; border-radius:5px; border:1.5px solid rgba(0,0,0,.12); }
+.deck-trump-mini.red { background:#fff5f5; color:#c0392b; }
+.deck-trump-mini.black { background:#f5f5f0; color:#1a1a2e; }
+.deck-trump-mini.trump { box-shadow:0 0 0 2px var(--gold); }
+.deck-trump-mini .dtm-rank { position:absolute; top:2px; left:4px; font-size:11px; font-weight:800; line-height:1; }
+.deck-trump-mini .dtm-suit { position:absolute; top:13px; left:4px; font-size:10px; line-height:1; }
+.deck-cnt { font-size:10px; color:var(--purple); font-weight:700; }
+.deck-lbl { font-size:9px; color:rgba(154,127,181,.5); letter-spacing:1px; text-transform:uppercase; }
+
+/* ── ROOMS LIST ──────────────────── */
+.rooms-section { width:100%; max-width:340px; margin-top:1.2rem; }
+.rooms-label { font-size:11px; letter-spacing:2px; color:var(--purple); margin-bottom:6px; text-transform:uppercase; }
+.room-item { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; margin-bottom:6px; background:rgba(255,255,255,.04); border:1px solid var(--border); cursor:pointer; transition:background .12s; }
+.room-item:active { background:rgba(232,200,74,.08); border-color:rgba(232,200,74,.3); }
+.room-code { font-size:14px; font-weight:700; color:var(--gold); flex:1; letter-spacing:1px; }
+.room-players { font-size:12px; color:var(--purple); }
+.room-join-arr { font-size:13px; color:rgba(154,127,181,.5); }
+.rooms-empty { font-size:12px; color:rgba(154,127,181,.4); text-align:center; padding:10px; }
+.rooms-loading { font-size:12px; color:rgba(154,127,181,.4); text-align:center; padding:10px; }
+
 /* ── TOAST ───────────────────────── */
 .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(20,10,40,.95); border:1px solid rgba(232,200,74,.3); color:var(--gold); padding:8px 18px; border-radius:8px; font-size:13px; pointer-events:none; opacity:0; transition:opacity .2s; z-index:999; white-space:nowrap; }
 .toast.show { opacity:1; }
@@ -195,6 +217,10 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
     <input id="inp-room" class="field-input" type="text" placeholder="Например: AB12CD" maxlength="8" style="text-transform:uppercase">
     <button class="btn-gold" onclick="joinRoom()">Войти в игру</button>
   </div>
+  <div class="rooms-section">
+    <div class="rooms-label">Открытые комнаты</div>
+    <div id="rooms-list"><div class="rooms-loading">Загрузка...</div></div>
+  </div>
 </div>
 
 <!-- LOBBY -->
@@ -207,15 +233,23 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
   <div class="lobby-actions">
     <button class="btn-gold" id="btn-start" onclick="startGame()" style="display:none">🃏 Начать игру</button>
     <div class="lobby-hint" id="lobby-hint">Ожидаем игроков...</div>
+    <button class="action-btn btn-ghost" id="btn-leave" onclick="leaveRoom()" style="display:none;margin-top:8px">← Выйти из комнаты</button>
   </div>
 </div>
 
 <!-- GAME -->
 <div id="s-game" class="screen">
   <div class="top-bar">
-    <div class="trump-info"><span>Козырь:</span><span class="trump-card-mini" id="trump-icon">—</span></div>
+    <div class="deck-widget">
+      <div class="deck-trump-mini" id="deck-trump-mini">
+        <span class="dtm-rank" id="dtm-rank">—</span>
+        <span class="dtm-suit" id="dtm-suit"></span>
+      </div>
+      <div class="deck-cnt" id="deck-num">0</div>
+      <div class="deck-lbl">колода</div>
+    </div>
     <div class="turn-text" id="turn-text">—</div>
-    <div class="deck-info">Колода: <span id="deck-num">0</span></div>
+    <div style="width:48px"></div>
   </div>
   <div class="opponents-row" id="opponents-row"></div>
   <div class="table-zone" id="table-zone"><div class="table-empty">Стол пуст</div></div>
@@ -234,6 +268,7 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
   <div class="end-sub" id="end-sub"></div>
   <div class="rank-list" id="rank-list"></div>
   <button class="btn-gold" style="max-width:240px" onclick="backToLobby()">Сыграть ещё раз</button>
+  <button class="action-btn btn-ghost" style="max-width:240px;margin-top:8px" onclick="goHome()">Закрыть</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -246,6 +281,7 @@ if (tg) { tg.expand(); tg.ready(); }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let ws = null, myId = null, myName = '', roomId = '';
+let intentionalClose = false;
 let gameState = null;
 let selectedHandCard = null;   // defender tap-tap selection
 let surrenderConfirm = false;
@@ -285,6 +321,43 @@ function playSound(n) {
   }
 }
 
+// ── ROOMS LIST ────────────────────────────────────────────────────────────────
+let roomsRefreshTimer = null;
+async function loadRooms() {
+  try {
+    const resp = await fetch('/rooms');
+    const list = await resp.json();
+    const el = document.getElementById('rooms-list');
+    if (!el) return;
+    if (!list.length) {
+      el.innerHTML='<div class="rooms-empty">Нет открытых комнат</div>'; return;
+    }
+    el.innerHTML=list.map(r=>`
+      <div class="room-item" onclick="quickJoin('${esc(r.room_id)}')">
+        <span class="room-code">${esc(r.room_id)}</span>
+        <span class="room-players">${r.player_count}/${r.max_players} игр.</span>
+        <span class="room-join-arr">→</span>
+      </div>`).join('');
+  } catch(e) {
+    const el=document.getElementById('rooms-list');
+    if(el) el.innerHTML='<div class="rooms-empty">—</div>';
+  }
+}
+function quickJoin(rid) {
+  document.getElementById('inp-room').value=rid.toUpperCase();
+  roomId=rid.toUpperCase();
+  getACtx();
+  connectWS();
+}
+function startRoomsRefresh() {
+  stopRoomsRefresh();
+  loadRooms();
+  roomsRefreshTimer=setInterval(loadRooms, 5000);
+}
+function stopRoomsRefresh() {
+  if (roomsRefreshTimer) { clearInterval(roomsRefreshTimer); roomsRefreshTimer=null; }
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.onload = () => {
   // Only allow players who opened the app via Telegram
@@ -301,8 +374,6 @@ window.onload = () => {
     return;
   }
 
-  const p = new URLSearchParams(location.search), rp = p.get('room')||'';
-  if (rp) document.getElementById('inp-room').value = rp.toUpperCase();
   if (tg?.initDataUnsafe?.user) {
     const u = tg.initDataUnsafe.user;
     myName = u.first_name || u.username || 'Игрок';
@@ -312,6 +383,17 @@ window.onload = () => {
     myName = 'Dev_' + myId.slice(-4);
   }
   initDragListeners();
+
+  const p = new URLSearchParams(location.search), rp = p.get('room')||'';
+  if (rp) {
+    // Auto-join when opened via bot button with room param
+    document.getElementById('inp-room').value = rp.toUpperCase();
+    roomId = rp.toUpperCase();
+    getACtx();
+    connectWS();
+  } else {
+    startRoomsRefresh();
+  }
 };
 
 // ── CONNECT ───────────────────────────────────────────────────────────────────
@@ -322,12 +404,13 @@ function joinRoom() {
   connectWS();
 }
 function connectWS() {
+  intentionalClose = false;
   if (ws) { try { ws.close(); } catch(e){} }
   ws = new WebSocket(`${SERVER}/ws/${roomId}/${myId}/${encodeURIComponent(myName)}`);
   ws.onopen = () => showScreen('s-lobby');
   ws.onmessage = e => handleMsg(JSON.parse(e.data));
   ws.onerror = () => toast('Ошибка подключения');
-  ws.onclose = () => { toast('Соединение потеряно...'); setTimeout(connectWS,2000); };
+  ws.onclose = () => { if (!intentionalClose) { toast('Соединение потеряно...'); setTimeout(connectWS,2000); } };
   setInterval(()=>{ if(ws?.readyState===1) ws.send(JSON.stringify({action:'ping'})); },25000);
 }
 function send(obj) { if(ws?.readyState===1) ws.send(JSON.stringify(obj)); }
@@ -383,13 +466,32 @@ function renderLobby() {
   document.getElementById('btn-start').style.display=isHost&&s.players.length>=2?'block':'none';
   document.getElementById('lobby-hint').textContent=
     isHost?(s.players.length<2?'Ждём ещё игроков...':'Можно начинать!'):'Ждём хоста...';
+  document.getElementById('btn-leave').style.display='block';
 }
 function startGame() { send({action:'start'}); }
+function leaveRoom() {
+  send({action:'leave_room'});
+  intentionalClose = true;
+  if (ws) { try { ws.close(); } catch(e){} ws=null; }
+  roomId='';
+  document.getElementById('inp-room').value='';
+  showScreen('s-join');
+  loadRooms();
+}
 
 // ── GAME RENDER ───────────────────────────────────────────────────────────────
 function renderTopBar() {
   const s=gameState, tc=s.trump_card;
-  document.getElementById('trump-icon').textContent=tc?tc.rank+tc.suit:'—';
+  const mini=document.getElementById('deck-trump-mini');
+  const rank=document.getElementById('dtm-rank');
+  const suit=document.getElementById('dtm-suit');
+  if (tc && tc.rank) {
+    rank.textContent=tc.rank; suit.textContent=tc.suit;
+    mini.className='deck-trump-mini trump '+((tc.suit==='♥'||tc.suit==='♦')?'red':'black');
+  } else {
+    rank.textContent='—'; suit.textContent='';
+    mini.className='deck-trump-mini black';
+  }
   document.getElementById('deck-num').textContent=s.deck_count;
   const att=s.players.find(p=>p.id===s.attacker_id);
   const def=s.players.find(p=>p.id===s.defender_id);
@@ -690,11 +792,20 @@ function renderEnd() {
 }
 
 function backToLobby() { send({action:'start'}); showScreen('s-lobby'); }
+function goHome() {
+  intentionalClose = true;
+  if (ws) { try { ws.close(); } catch(e){} ws=null; }
+  roomId='';
+  document.getElementById('inp-room').value='';
+  showScreen('s-join');
+  startRoomsRefresh();
+}
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if (id==='s-join') startRoomsRefresh(); else stopRoomsRefresh();
 }
 function toast(msg) {
   const t=document.getElementById('toast');
