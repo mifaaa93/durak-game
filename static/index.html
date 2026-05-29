@@ -8,249 +8,173 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
-  --bg: #0f0820;
-  --bg2: #1a0f35;
-  --gold: #e8c84a;
-  --gold2: #f5d55a;
-  --purple: #9a7fb5;
-  --blue: #7eb8f5;
-  --red: #e57373;
-  --text: #f0e6d3;
-  --text2: #b8a8cc;
+  --bg: #0f0820; --bg2: #1a0f35;
+  --gold: #e8c84a; --gold2: #f5d55a;
+  --purple: #9a7fb5; --blue: #7eb8f5;
+  --red: #e57373; --text: #f0e6d3;
   --border: rgba(255,255,255,0.1);
-  --card-w: 52px;
-  --card-h: 74px;
+  --cw: 52px; --ch: 74px;
 }
-body {
-  font-family: -apple-system, 'Helvetica Neue', sans-serif;
-  background: var(--bg); color: var(--text);
-  min-height: 100vh; overflow-x: hidden;
-}
+body { font-family: -apple-system,'Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
 
-/* ── SCREENS ─────────────────────────────── */
-.screen { display: none; min-height: 100vh; flex-direction: column; }
-.screen.active { display: flex; }
+/* ── SCREENS ─────────────────────── */
+.screen { display:none; min-height:100vh; flex-direction:column; }
+.screen.active { display:flex; }
 
-/* ── JOIN ───────────────────────────────── */
-#s-join { align-items: center; justify-content: center; padding: 2rem; }
-.logo { font-size: 44px; font-weight: 800; color: var(--gold); letter-spacing: 3px; margin-bottom: 4px; }
-.logo-sub { font-size: 12px; letter-spacing: 5px; color: var(--purple); margin-bottom: 2.5rem; text-transform: uppercase; }
-.join-card {
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(232,200,74,0.2);
-  border-radius: 16px; padding: 1.5rem; width: 100%; max-width: 340px;
-}
-.field-label { font-size: 11px; letter-spacing: 2px; color: var(--purple); margin-bottom: 6px; text-transform: uppercase; }
-.field-input {
-  width: 100%; padding: 11px 14px; background: rgba(255,255,255,0.07);
-  border: 1px solid var(--border); border-radius: 9px;
-  color: var(--text); font-size: 15px; margin-bottom: 1rem; -webkit-appearance: none;
-}
-.field-input:focus { outline: none; border-color: var(--gold); }
-.btn-gold {
-  width: 100%; padding: 13px; background: var(--gold); color: #1a0a2e;
-  border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
-  cursor: pointer; letter-spacing: 1px;
-}
-.btn-gold:active { background: var(--gold2); }
+/* ── JOIN ────────────────────────── */
+#s-join { align-items:center; justify-content:center; padding:2rem; }
+.logo { font-size:44px; font-weight:800; color:var(--gold); letter-spacing:3px; margin-bottom:4px; }
+.logo-sub { font-size:12px; letter-spacing:5px; color:var(--purple); margin-bottom:2.5rem; text-transform:uppercase; }
+.join-card { background:rgba(255,255,255,.05); border:1px solid rgba(232,200,74,.2); border-radius:16px; padding:1.5rem; width:100%; max-width:340px; }
+.field-label { font-size:11px; letter-spacing:2px; color:var(--purple); margin-bottom:6px; text-transform:uppercase; }
+.field-input { width:100%; padding:11px 14px; background:rgba(255,255,255,.07); border:1px solid var(--border); border-radius:9px; color:var(--text); font-size:15px; margin-bottom:1rem; -webkit-appearance:none; }
+.field-input:focus { outline:none; border-color:var(--gold); }
+.btn-gold { width:100%; padding:13px; background:var(--gold); color:#1a0a2e; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; }
+.btn-gold:active { background:var(--gold2); }
 
-/* ── LOBBY ──────────────────────────────── */
-#s-lobby { padding: 0; }
-.lobby-header {
-  padding: 14px 16px 10px; background: rgba(0,0,0,0.3);
-  border-bottom: 1px solid var(--border); text-align: center;
-}
-.lobby-title { font-size: 18px; font-weight: 700; color: var(--gold); }
-.lobby-room { font-size: 12px; color: var(--purple); margin-top: 2px; }
-.player-list { flex: 1; padding: 12px 16px; overflow-y: auto; }
-.player-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 14px; border-radius: 10px; margin-bottom: 8px;
-  background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-}
-.player-avatar {
-  width: 36px; height: 36px; border-radius: 50%; background: rgba(232,200,74,0.15);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700; color: var(--gold); flex-shrink: 0;
-}
-.player-info { flex: 1; }
-.player-name { font-size: 14px; font-weight: 600; }
-.player-tag { font-size: 11px; color: var(--purple); }
-.lobby-actions { padding: 12px 16px; border-top: 1px solid var(--border); }
-.lobby-hint { font-size: 12px; color: var(--purple); text-align: center; margin-top: 8px; }
+/* ── LOBBY ───────────────────────── */
+#s-lobby { padding:0; }
+.lobby-header { padding:14px 16px 10px; background:rgba(0,0,0,.3); border-bottom:1px solid var(--border); text-align:center; }
+.lobby-title { font-size:18px; font-weight:700; color:var(--gold); }
+.lobby-room { font-size:12px; color:var(--purple); margin-top:2px; }
+.player-list { flex:1; padding:12px 16px; overflow-y:auto; }
+.player-item { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px; margin-bottom:8px; background:rgba(255,255,255,.04); border:1px solid var(--border); }
+.player-avatar { width:36px; height:36px; border-radius:50%; background:rgba(232,200,74,.15); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--gold); flex-shrink:0; }
+.player-info { flex:1; }
+.player-name { font-size:14px; font-weight:600; }
+.player-tag { font-size:11px; color:var(--purple); }
+.lobby-actions { padding:12px 16px; border-top:1px solid var(--border); }
+.lobby-hint { font-size:12px; color:var(--purple); text-align:center; margin-top:8px; }
 
-/* ── GAME ───────────────────────────────── */
-#s-game { padding: 0; }
-.top-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; background: rgba(0,0,0,0.35);
-  border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-.trump-info { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--purple); }
-.trump-card-mini { font-size: 20px; }
-.deck-info { font-size: 12px; color: var(--purple); }
-.turn-text { font-size: 12px; font-weight: 700; color: var(--gold); text-align: center; max-width: 120px; line-height: 1.3; }
+/* ── GAME ────────────────────────── */
+#s-game { padding:0; }
+.top-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:rgba(0,0,0,.35); border-bottom:1px solid var(--border); flex-shrink:0; }
+.trump-info { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--purple); }
+.trump-card-mini { font-size:20px; }
+.deck-info { font-size:12px; color:var(--purple); }
+.turn-text { font-size:12px; font-weight:700; color:var(--gold); text-align:center; max-width:120px; line-height:1.3; }
 
-.opponents-row {
-  display: flex; gap: 6px; padding: 8px 10px; overflow-x: auto;
-  border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
-  scrollbar-width: none;
-}
-.opponents-row::-webkit-scrollbar { display: none; }
-.opp-chip {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border);
-  min-width: 62px; flex-shrink: 0; transition: all 0.2s;
-}
-.opp-chip.is-attacker { border-color: var(--gold); background: rgba(232,200,74,0.08); }
-.opp-chip.is-defender { border-color: var(--blue); background: rgba(126,184,245,0.08); }
-.opp-chip.is-out { opacity: 0.3; }
-.opp-name { font-size: 10px; color: var(--purple); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; max-width: 58px; overflow: hidden; text-overflow: ellipsis; }
-.opp-count { font-size: 17px; font-weight: 700; }
-.opp-role { font-size: 9px; color: var(--gold); height: 12px; }
+.opponents-row { display:flex; gap:6px; padding:8px 10px; overflow-x:auto; border-bottom:1px solid rgba(255,255,255,.05); flex-shrink:0; scrollbar-width:none; }
+.opponents-row::-webkit-scrollbar { display:none; }
+.opp-chip { display:flex; flex-direction:column; align-items:center; gap:2px; padding:5px 10px; border-radius:8px; border:1px solid var(--border); min-width:62px; flex-shrink:0; transition:all .2s; }
+.opp-chip.is-attacker { border-color:var(--gold); background:rgba(232,200,74,.08); }
+.opp-chip.is-defender { border-color:var(--blue); background:rgba(126,184,245,.08); }
+.opp-chip.is-out { opacity:.3; }
+.opp-name { font-size:10px; color:var(--purple); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; max-width:58px; overflow:hidden; text-overflow:ellipsis; }
+.opp-count { font-size:17px; font-weight:700; }
+.opp-role { font-size:9px; color:var(--gold); height:12px; }
 
-/* ── TABLE ──────────────────────────────── */
-.table-zone {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 12px 8px; min-height: 160px; overflow: visible;
-}
-.table-empty { font-size: 12px; color: rgba(154,127,181,0.35); letter-spacing: 2px; text-transform: uppercase; }
-.pairs-wrap { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: flex-start; }
+/* ── TABLE ───────────────────────── */
+.table-zone { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px 8px; min-height:160px; overflow:visible; }
+.table-empty { font-size:12px; color:rgba(154,127,181,.35); letter-spacing:2px; text-transform:uppercase; }
+.pairs-wrap { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:flex-start; }
 
-/* ── CARDS ──────────────────────────────── */
+/* ── CARD BASE ───────────────────── */
+/* rank/suit in top-left so overlapping cards are always readable */
 .card {
-  width: var(--card-w); height: var(--card-h); border-radius: 7px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-weight: 700; cursor: pointer; user-select: none;
-  border: 1.5px solid rgba(0,0,0,0.12); flex-shrink: 0;
+  position:relative;
+  width:var(--cw); height:var(--ch);
+  border-radius:7px; border:1.5px solid rgba(0,0,0,.12);
+  flex-shrink:0; cursor:pointer; user-select:none;
 }
-.card.red  { background: #fff5f5; color: #c0392b; }
-.card.black { background: #f5f5f0; color: #1a1a2e; }
-.card.trump { box-shadow: 0 0 0 2px var(--gold); }
-.card.dim  { opacity: 0.42; cursor: default; }
-.card-rank { font-size: 14px; line-height: 1; }
-.card-suit { font-size: 17px; line-height: 1; }
+.card.red  { background:#fff5f5; color:#c0392b; }
+.card.black { background:#f5f5f0; color:#1a1a2e; }
+.card.trump { box-shadow:0 0 0 2px var(--gold); }
+.card.dim  { opacity:.42; cursor:default; }
 
-/* Pair container with absolute layout so both cards are always visible */
+.card-rank {
+  position:absolute; top:3px; left:5px;
+  font-size:13px; font-weight:800; line-height:1;
+}
+.card-suit {
+  position:absolute; top:19px; left:5px;
+  font-size:14px; line-height:1;
+}
+
+/* ── PAIR on table ───────────────── */
+/* Fixed-size container so absolute children never clip */
 .pair {
-  position: relative;
-  width: 68px;
-  height: 108px;
-  flex-shrink: 0;
+  position:relative;
+  width:68px; height:108px;
+  flex-shrink:0;
 }
-
-/* Attack card sits at top-left of pair */
+/* Attack card: top-left of pair */
 .card-atk {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transition: opacity 0.2s;
-  animation: atkAppear 0.22s ease-out;
+  position:absolute; top:0; left:0;
+  animation:atkIn .22s ease-out;
+  transition:opacity .2s;
 }
-.card-atk.beaten { opacity: 0.6; }
-.card-atk.clickable {
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(126,184,245,0.55);
-}
+.card-atk.beaten { opacity:.55; }
+.card-atk.clickable { cursor:pointer; box-shadow:0 0 10px rgba(126,184,245,.6); }
 
-/* Defend card overlays attack card, rotated to look hand-placed */
+/* Defend card: offset + slight rotation — top-left text always visible */
 .card-def {
-  position: absolute;
-  top: 24px;
-  left: 8px;
-  transform: rotate(-6deg);
-  z-index: 2;
-  box-shadow: 0 0 0 2px var(--blue), 3px 6px 14px rgba(0,0,0,0.55);
-  animation: defAppear 0.22s ease-out;
+  position:absolute; top:26px; left:8px;
+  transform:rotate(-7deg);
+  z-index:2;
+  box-shadow:0 0 0 2px var(--blue), 3px 6px 14px rgba(0,0,0,.55);
+  animation:defIn .22s ease-out;
 }
-.card-def.trump-glow {
-  box-shadow: 0 0 0 2px var(--gold), 3px 6px 14px rgba(232,200,74,0.35);
-}
+.card-def.trump-def { box-shadow:0 0 0 2px var(--gold), 3px 6px 14px rgba(232,200,74,.4); }
 
-/* Hand cards */
+/* ── HAND cards ──────────────────── */
 .card-hand {
-  position: relative;
-  transition: transform 0.13s, box-shadow 0.13s;
-  animation: handAppear 0.18s ease-out;
+  transition:transform .13s, box-shadow .13s;
+  animation:handIn .18s ease-out;
 }
 .card-hand.selected {
-  transform: translateY(-10px) !important;
-  box-shadow: 0 0 0 2px var(--gold), 0 12px 20px rgba(232,200,74,0.3);
+  transform:translateY(-10px) !important;
+  box-shadow:0 0 0 2px var(--gold), 0 12px 20px rgba(232,200,74,.3);
 }
 
-/* ── ANIMATIONS ─────────────────────────── */
-@keyframes atkAppear {
-  from { transform: scale(0.75) translateY(-12px); opacity: 0; }
-  to   { transform: scale(1)    translateY(0);     opacity: 1; }
+/* ── ANIMATIONS ──────────────────── */
+@keyframes atkIn {
+  from { transform:scale(.75) translateY(-14px); opacity:0; }
+  to   { transform:scale(1)   translateY(0);      opacity:1; }
 }
-@keyframes defAppear {
-  from { transform: rotate(-15deg) scale(0.8) translateY(-10px); opacity: 0.5; }
-  to   { transform: rotate(-6deg)  scale(1)   translateY(0);     opacity: 1; }
+@keyframes defIn {
+  from { transform:rotate(-16deg) scale(.8) translateY(-10px); opacity:.4; }
+  to   { transform:rotate(-7deg)  scale(1)  translateY(0);     opacity:1; }
 }
-@keyframes handAppear {
-  from { transform: scale(0.82) translateY(8px); opacity: 0.6; }
-  to   { transform: scale(1)    translateY(0);   opacity: 1; }
-}
-
-/* ── MISC ───────────────────────────────── */
-.msg-bar {
-  padding: 6px 12px; font-size: 12px; text-align: center;
-  color: var(--gold); background: rgba(232,200,74,0.06);
-  border-top: 1px solid rgba(232,200,74,0.1); min-height: 30px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.actions-bar {
-  display: flex; gap: 6px; padding: 8px 10px; flex-wrap: wrap;
-  background: rgba(0,0,0,0.2); border-top: 1px solid var(--border); flex-shrink: 0;
-}
-.action-btn {
-  padding: 8px 14px; border-radius: 8px; border: 1px solid;
-  cursor: pointer; font-size: 13px; font-weight: 700; flex: 1; min-width: 80px;
-  background: transparent; transition: all 0.12s;
-}
-.btn-red   { color: var(--red);    border-color: var(--red); }
-.btn-red:active   { background: rgba(229,115,115,0.15); }
-.btn-blue  { color: var(--blue);   border-color: var(--blue); }
-.btn-blue:active  { background: rgba(126,184,245,0.15); }
-.btn-ghost { color: var(--purple); border-color: rgba(154,127,181,0.3); }
-.btn-ghost:active { background: rgba(154,127,181,0.1); }
-.action-btn:disabled { opacity: 0.3; cursor: default; }
-
-.my-hand-area {
-  padding: 8px 6px 10px; background: rgba(0,0,0,0.25);
-  border-top: 1px solid var(--border); flex-shrink: 0;
-}
-.hand-label { font-size: 10px; letter-spacing: 2px; color: rgba(154,127,181,0.55); margin-bottom: 6px; padding-left: 4px; text-transform: uppercase; }
-.hand-row { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 2px; }
-
-.defend-hint {
-  font-size: 11px; color: var(--blue); text-align: center;
-  padding: 4px 8px; border-radius: 6px; background: rgba(126,184,245,0.08);
-  border: 1px solid rgba(126,184,245,0.2); margin: 4px 10px 0;
+@keyframes handIn {
+  from { transform:scale(.8) translateY(8px); opacity:.5; }
+  to   { transform:scale(1)  translateY(0);   opacity:1; }
 }
 
-/* ── END ────────────────────────────────── */
-#s-end { align-items: center; justify-content: center; padding: 2rem; text-align: center; }
-.end-title { font-size: 32px; font-weight: 800; color: var(--gold); margin-bottom: 6px; }
-.end-sub { font-size: 14px; color: var(--purple); margin-bottom: 1.5rem; }
-.rank-list { width: 100%; max-width: 320px; margin-bottom: 1.5rem; }
-.rank-row {
-  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
-  border-radius: 9px; margin-bottom: 6px;
-  background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-}
-.rank-medal { font-size: 20px; width: 28px; text-align: center; }
-.rank-name { flex: 1; font-size: 14px; text-align: left; }
-.rank-tag { font-size: 11px; color: var(--purple); }
+/* ── UI BARS ─────────────────────── */
+.msg-bar { padding:6px 12px; font-size:12px; text-align:center; color:var(--gold); background:rgba(232,200,74,.06); border-top:1px solid rgba(232,200,74,.1); min-height:30px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.defend-hint { font-size:11px; color:var(--blue); text-align:center; padding:4px 8px; border-radius:6px; background:rgba(126,184,245,.08); border:1px solid rgba(126,184,245,.2); margin:4px 10px 0; }
 
-/* ── TOAST ──────────────────────────────── */
-.toast {
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-  background: rgba(20,10,40,0.95); border: 1px solid rgba(232,200,74,0.3);
-  color: var(--gold); padding: 8px 18px; border-radius: 8px; font-size: 13px;
-  pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 999;
-  white-space: nowrap;
-}
-.toast.show { opacity: 1; }
+.actions-bar { display:flex; gap:6px; padding:8px 10px; flex-wrap:wrap; background:rgba(0,0,0,.2); border-top:1px solid var(--border); flex-shrink:0; }
+.action-btn { padding:8px 14px; border-radius:8px; border:1px solid; cursor:pointer; font-size:13px; font-weight:700; flex:1; min-width:80px; background:transparent; transition:all .12s; }
+.btn-red  { color:var(--red);    border-color:var(--red); }
+.btn-red:active  { background:rgba(229,115,115,.15); }
+.btn-blue { color:var(--blue);   border-color:var(--blue); }
+.btn-blue:active { background:rgba(126,184,245,.15); }
+.btn-ghost{ color:var(--purple); border-color:rgba(154,127,181,.3); }
+.btn-ghost:active{ background:rgba(154,127,181,.1); }
+.action-btn:disabled { opacity:.3; cursor:default; }
+
+.my-hand-area { padding:8px 6px 10px; background:rgba(0,0,0,.25); border-top:1px solid var(--border); flex-shrink:0; }
+.hand-label { font-size:10px; letter-spacing:2px; color:rgba(154,127,181,.55); margin-bottom:6px; padding-left:4px; text-transform:uppercase; }
+.hand-row { display:flex; flex-wrap:wrap; gap:4px; padding:0 2px; }
+
+/* ── END ─────────────────────────── */
+#s-end { align-items:center; justify-content:center; padding:2rem; text-align:center; }
+.end-title { font-size:32px; font-weight:800; color:var(--gold); margin-bottom:6px; }
+.end-sub { font-size:14px; color:var(--purple); margin-bottom:1.5rem; }
+.rank-list { width:100%; max-width:320px; margin-bottom:1.5rem; }
+.rank-row { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; margin-bottom:6px; background:rgba(255,255,255,.04); border:1px solid var(--border); }
+.rank-medal { font-size:20px; width:28px; text-align:center; }
+.rank-name { flex:1; font-size:14px; text-align:left; }
+.rank-tag { font-size:11px; color:var(--purple); }
+
+/* ── TOAST ───────────────────────── */
+.toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:rgba(20,10,40,.95); border:1px solid rgba(232,200,74,.3); color:var(--gold); padding:8px 18px; border-radius:8px; font-size:13px; pointer-events:none; opacity:0; transition:opacity .2s; z-index:999; white-space:nowrap; }
+.toast.show { opacity:1; }
+
+/* ── SURRENDER CONFIRM ───────────── */
+.surr-confirm { font-size:12px; color:var(--red); font-weight:700; display:flex; align-items:center; padding:0 4px; }
 </style>
 </head>
 <body>
@@ -284,17 +208,12 @@ body {
 <!-- GAME -->
 <div id="s-game" class="screen">
   <div class="top-bar">
-    <div class="trump-info">
-      <span>Козырь:</span>
-      <span class="trump-card-mini" id="trump-icon">—</span>
-    </div>
+    <div class="trump-info"><span>Козырь:</span><span class="trump-card-mini" id="trump-icon">—</span></div>
     <div class="turn-text" id="turn-text">—</div>
     <div class="deck-info">Колода: <span id="deck-num">0</span></div>
   </div>
   <div class="opponents-row" id="opponents-row"></div>
-  <div class="table-zone" id="table-zone">
-    <div class="table-empty">Стол пуст</div>
-  </div>
+  <div class="table-zone" id="table-zone"><div class="table-empty">Стол пуст</div></div>
   <div class="msg-bar" id="msg-bar"></div>
   <div id="defend-hint-bar"></div>
   <div class="actions-bar" id="actions-bar"></div>
@@ -324,6 +243,7 @@ if (tg) { tg.expand(); tg.ready(); }
 let ws = null, myId = null, myName = '', roomId = '';
 let gameState = null;
 let selectedHandCard = null;
+let surrenderConfirm = false;
 let prevPairsSig = null, prevPhase = null;
 
 // ── AUDIO ─────────────────────────────────────────────────────────────────────
@@ -332,216 +252,192 @@ function getACtx() {
   if (!audioCtx) try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
   return audioCtx;
 }
-
 function tone(freq, type, dur, vol, delay) {
   try {
     const ctx = getACtx(); if (!ctx) return;
-    const t = ctx.currentTime + (delay || 0);
+    const t = ctx.currentTime + (delay||0);
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
-    o.type = type || 'sine';
-    o.frequency.setValueAtTime(freq, t);
-    g.gain.setValueAtTime(vol || 0.25, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    o.start(t); o.stop(t + dur + 0.01);
-  } catch(e) {}
+    o.type = type||'sine'; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(vol||.25, t);
+    g.gain.exponentialRampToValueAtTime(.001, t+dur);
+    o.start(t); o.stop(t+dur+.01);
+  } catch(e){}
 }
-
-function playSound(name) {
-  switch (name) {
-    case 'attack':  tone(400, 'triangle', 0.13, 0.28); break;
-    case 'defend':  tone(700, 'sine', 0.09, 0.22); tone(920, 'sine', 0.07, 0.16, 0.06); break;
-    case 'take':    tone(180, 'sawtooth', 0.3, 0.18); tone(120, 'sawtooth', 0.22, 0.12, 0.12); break;
-    case 'deal':    [0,1,2,3].forEach(i => tone(500 + i*55, 'sine', 0.07, 0.13, i*0.058)); break;
-    case 'win':     [330,415,495,660].forEach((f,i) => tone(f, 'sine', 0.28, 0.22, i*0.12)); break;
-    case 'error':   tone(130, 'square', 0.15, 0.18); break;
+function playSound(n) {
+  switch(n) {
+    case 'attack':  tone(400,'triangle',.13,.28); break;
+    case 'defend':  tone(700,'sine',.09,.22); tone(920,'sine',.07,.16,.06); break;
+    case 'take':    tone(180,'sawtooth',.3,.18); tone(120,'sawtooth',.22,.12,.12); break;
+    case 'deal':    [0,1,2,3].forEach(i=>tone(500+i*55,'sine',.07,.13,i*.058)); break;
+    case 'win':     [330,415,495,660].forEach((f,i)=>tone(f,'sine',.28,.22,i*.12)); break;
+    case 'error':   tone(130,'square',.15,.18); break;
   }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.onload = () => {
-  const params = new URLSearchParams(location.search);
-  const rp = params.get('room') || '';
+  const p = new URLSearchParams(location.search), rp = p.get('room')||'';
   if (rp) document.getElementById('inp-room').value = rp.toUpperCase();
   if (tg?.initDataUnsafe?.user) {
     const u = tg.initDataUnsafe.user;
     document.getElementById('inp-name').value = u.first_name || u.username || '';
     myId = String(u.id);
   } else {
-    myId = 'user_' + Math.random().toString(36).slice(2, 8);
+    myId = 'user_' + Math.random().toString(36).slice(2,8);
   }
 };
 
-// ── JOIN ──────────────────────────────────────────────────────────────────────
+// ── CONNECT ───────────────────────────────────────────────────────────────────
 function joinRoom() {
   myName = document.getElementById('inp-name').value.trim();
   roomId = document.getElementById('inp-room').value.trim().toUpperCase();
   if (!myName) { toast('Введите имя'); return; }
   if (!roomId) { toast('Введите ID комнаты'); return; }
-  getACtx(); // init audio on user gesture
+  getACtx();
   connectWS();
 }
-
 function connectWS() {
   if (ws) { try { ws.close(); } catch(e){} }
   ws = new WebSocket(`${SERVER}/ws/${roomId}/${myId}/${encodeURIComponent(myName)}`);
   ws.onopen = () => showScreen('s-lobby');
   ws.onmessage = e => handleMsg(JSON.parse(e.data));
   ws.onerror = () => toast('Ошибка подключения');
-  ws.onclose = () => { toast('Соединение потеряно, переподключаюсь...'); setTimeout(connectWS, 2000); };
-  setInterval(() => { if (ws?.readyState === 1) ws.send(JSON.stringify({action:'ping'})); }, 25000);
+  ws.onclose = () => { toast('Соединение потеряно...'); setTimeout(connectWS,2000); };
+  setInterval(()=>{ if(ws?.readyState===1) ws.send(JSON.stringify({action:'ping'})); },25000);
 }
-
-function send(obj) { if (ws?.readyState === 1) ws.send(JSON.stringify(obj)); }
+function send(obj) { if(ws?.readyState===1) ws.send(JSON.stringify(obj)); }
 
 // ── MESSAGES ──────────────────────────────────────────────────────────────────
 function handleMsg(msg) {
-  if (msg.type === 'state') {
-    gameState = msg.state; applyState();
-  } else if (msg.type === 'error') {
-    playSound('error'); toast(msg.msg);
-  } else if (msg.type === 'player_disconnected') {
-    toast('Игрок отключился');
-  }
+  if (msg.type==='state') { gameState=msg.state; applyState(); }
+  else if (msg.type==='error') { playSound('error'); toast(msg.msg); }
+  else if (msg.type==='player_disconnected') { toast('Игрок отключился'); }
 }
 
 function applyState() {
   const s = gameState;
-  // Detect state changes for sounds
-  const sig = JSON.stringify((s.pairs || []).map(p => ({
-    a: p.attack ? p.attack.rank + p.attack.suit : '',
-    d: p.defend ? p.defend.rank + p.defend.suit : ''
+  surrenderConfirm = false; // reset on every server update
+
+  // Sound detection
+  const sig = JSON.stringify((s.pairs||[]).map(p=>({
+    a: p.attack ? p.attack.rank+p.attack.suit : '',
+    d: p.defend ? p.defend.rank+p.defend.suit : ''
   })));
   if (prevPairsSig !== null) {
-    const prev = JSON.parse(prevPairsSig), curr = JSON.parse(sig);
-    if (prevPhase === 'lobby' && s.phase === 'attack') {
-      playSound('deal');
-    } else if (curr.length > prev.length) {
-      playSound('attack');
-    } else if (curr.length > 0 && curr.length === prev.length) {
-      if (curr.some((c, i) => c.d && (!prev[i] || !prev[i].d))) playSound('defend');
-    } else if (curr.length === 0 && prev.length > 0) {
-      playSound(s.message && s.message.includes('взял') ? 'take' : 'deal');
-    }
+    const prev=JSON.parse(prevPairsSig), curr=JSON.parse(sig);
+    if (prevPhase==='lobby' && s.phase==='attack') playSound('deal');
+    else if (curr.length > prev.length) playSound('attack');
+    else if (curr.length>0 && curr.length===prev.length && curr.some((c,i)=>c.d&&(!prev[i]||!prev[i].d))) playSound('defend');
+    else if (curr.length===0 && prev.length>0) playSound(s.message?.includes('взял')?'take':'deal');
   }
   prevPairsSig = sig;
   prevPhase = s.phase;
 
-  if (s.phase === 'lobby') { renderLobby(); return; }
-  if (s.phase === 'end')   { renderEnd();   return; }
+  if (s.phase==='lobby') { renderLobby(); return; }
+  if (s.phase==='end')   { renderEnd();   return; }
   showScreen('s-game');
   renderTopBar(); renderOpponents(); renderTable();
   renderActions(); renderHand();
-  document.getElementById('msg-bar').textContent = s.message || '';
+  document.getElementById('msg-bar').textContent = s.message||'';
 }
 
 // ── LOBBY ─────────────────────────────────────────────────────────────────────
 function renderLobby() {
   showScreen('s-lobby');
   const s = gameState;
-  document.getElementById('lobby-room-id').textContent = 'Комната: ' + s.room_id;
-  document.getElementById('player-list').innerHTML = s.players.map(p => `
+  document.getElementById('lobby-room-id').textContent = 'Комната: '+s.room_id;
+  document.getElementById('player-list').innerHTML = s.players.map(p=>`
     <div class="player-item">
       <div class="player-avatar">${p.name[0].toUpperCase()}</div>
       <div class="player-info">
-        <div class="player-name">${esc(p.name)}${p.id === myId ? ' (вы)' : ''}</div>
-        <div class="player-tag">${p.id === s.host_id ? '👑 Хост' : 'Игрок'}</div>
+        <div class="player-name">${esc(p.name)}${p.id===myId?' (вы)':''}</div>
+        <div class="player-tag">${p.id===s.host_id?'👑 Хост':'Игрок'}</div>
       </div>
     </div>`).join('');
-  const isHost = s.host_id === myId;
-  document.getElementById('btn-start').style.display = isHost && s.players.length >= 2 ? 'block' : 'none';
+  const isHost = s.host_id===myId;
+  document.getElementById('btn-start').style.display = isHost&&s.players.length>=2?'block':'none';
   document.getElementById('lobby-hint').textContent =
-    isHost ? (s.players.length < 2 ? 'Ждём ещё игроков...' : 'Можно начинать!') : 'Ждём хоста...';
+    isHost?(s.players.length<2?'Ждём ещё игроков...':'Можно начинать!'):'Ждём хоста...';
 }
-
-function startGame() { send({ action: 'start' }); }
+function startGame() { send({action:'start'}); }
 
 // ── GAME RENDER ───────────────────────────────────────────────────────────────
 function renderTopBar() {
-  const s = gameState, tc = s.trump_card;
-  document.getElementById('trump-icon').textContent = tc ? tc.rank + tc.suit : '—';
+  const s=gameState, tc=s.trump_card;
+  document.getElementById('trump-icon').textContent = tc?tc.rank+tc.suit:'—';
   document.getElementById('deck-num').textContent = s.deck_count;
-  const att = s.players.find(p => p.id === s.attacker_id);
-  const def = s.players.find(p => p.id === s.defender_id);
-  document.getElementById('turn-text').textContent = (att?.name || '?') + ' → ' + (def?.name || '?');
+  const att=s.players.find(p=>p.id===s.attacker_id);
+  const def=s.players.find(p=>p.id===s.defender_id);
+  document.getElementById('turn-text').textContent = (att?.name||'?')+' → '+(def?.name||'?');
 }
 
 function renderOpponents() {
-  const s = gameState;
-  document.getElementById('opponents-row').innerHTML = s.players.map(p => {
-    let cls = 'opp-chip';
-    if (p.out) cls += ' is-out';
-    else if (p.id === s.attacker_id) cls += ' is-attacker';
-    else if (p.id === s.defender_id) cls += ' is-defender';
-    const role = p.out ? 'вышел' : (p.id === s.attacker_id ? 'атакует' : (p.id === s.defender_id ? 'отбивает' : ''));
+  const s=gameState;
+  document.getElementById('opponents-row').innerHTML = s.players.map(p=>{
+    let cls='opp-chip';
+    if(p.out) cls+=' is-out';
+    else if(p.id===s.attacker_id) cls+=' is-attacker';
+    else if(p.id===s.defender_id) cls+=' is-defender';
+    const role=p.out?'вышел':(p.id===s.attacker_id?'атакует':(p.id===s.defender_id?'отбивает':''));
     return `<div class="${cls}">
       <div class="opp-name">${esc(p.name)}${p.id===myId?' (я)':''}</div>
-      <div class="opp-count">${p.out ? '✓' : p.card_count}</div>
+      <div class="opp-count">${p.out?'✓':p.card_count}</div>
       <div class="opp-role">${role}</div>
     </div>`;
   }).join('');
 }
 
 function renderTable() {
-  const s = gameState;
-  const zone = document.getElementById('table-zone');
-  const hintBar = document.getElementById('defend-hint-bar');
-
-  if (!s.pairs || s.pairs.length === 0) {
-    zone.innerHTML = '<div class="table-empty">Стол пуст</div>';
-    hintBar.innerHTML = '';
-    return;
+  const s=gameState;
+  const zone=document.getElementById('table-zone');
+  const hintBar=document.getElementById('defend-hint-bar');
+  if (!s.pairs||s.pairs.length===0) {
+    zone.innerHTML='<div class="table-empty">Стол пуст</div>';
+    hintBar.innerHTML=''; return;
   }
-
-  const canDefend = myId === s.defender_id && s.phase === 'defend' && selectedHandCard;
+  const canDefend = myId===s.defender_id && s.phase==='defend' && selectedHandCard;
   hintBar.innerHTML = canDefend ? '<div class="defend-hint">Нажмите на карту которую хотите отбить</div>' : '';
 
-  zone.innerHTML = '<div class="pairs-wrap">' + s.pairs.map((pair, i) => {
-    const hasDefend = !!pair.defend;
-    const isClickable = canDefend && !hasDefend;
-
-    // Attack card
-    let aCls = 'card ' + colorCls(pair.attack) + ' card-atk';
-    if (isTrump(pair.attack)) aCls += ' trump';
-    if (hasDefend) aCls += ' beaten';
-    if (isClickable) aCls += ' clickable';
-    const aClick = isClickable ? `onclick="onTableAttackClick(${i})"` : '';
+  zone.innerHTML = '<div class="pairs-wrap">' + s.pairs.map((pair,i)=>{
+    const hasDef = !!pair.defend;
+    const isClick = canDefend && !hasDef;
+    let aCls = 'card '+clr(pair.attack)+' card-atk'+(hasDef?' beaten':'')+(isClick?' clickable':'');
+    if(trump(pair.attack)) aCls+=' trump';
+    const aClick = isClick ? `onclick="onTableClick(${i})"` : '';
     const aHtml = `<div class="${aCls}" ${aClick}><div class="card-rank">${esc(pair.attack.rank)}</div><div class="card-suit">${pair.attack.suit}</div></div>`;
 
-    // Defend card
-    let dHtml = '';
-    if (hasDefend) {
-      let dCls = 'card ' + colorCls(pair.defend) + ' card-def';
-      if (isTrump(pair.defend)) dCls += ' trump trump-glow';
-      dHtml = `<div class="${dCls}"><div class="card-rank">${esc(pair.defend.rank)}</div><div class="card-suit">${pair.defend.suit}</div></div>`;
+    let dHtml='';
+    if (hasDef) {
+      let dCls='card '+clr(pair.defend)+' card-def';
+      if(trump(pair.defend)) dCls+=' trump trump-def';
+      dHtml=`<div class="${dCls}"><div class="card-rank">${esc(pair.defend.rank)}</div><div class="card-suit">${pair.defend.suit}</div></div>`;
     }
-
     return `<div class="pair">${aHtml}${dHtml}</div>`;
   }).join('') + '</div>';
 }
 
-function colorCls(card) { return (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black'; }
-function isTrump(card)  { return gameState && card.suit === gameState.trump_suit; }
+function clr(c) { return(c.suit==='♥'||c.suit==='♦')?'red':'black'; }
+function trump(c) { return gameState&&c.suit===gameState.trump_suit; }
 
 function renderHand() {
-  const s = gameState;
-  const me = s.players.find(p => p.id === myId);
+  const s=gameState, me=s.players.find(p=>p.id===myId);
   if (!me) return;
-  document.getElementById('hand-label').textContent = me.name + ' — ' + me.card_count + ' карт';
-  const row = document.getElementById('hand-row');
-  if (!me.hand || me.hand.length === 0) {
-    row.innerHTML = '<span style="color:var(--purple);font-size:12px">Нет карт</span>';
-    return;
+  document.getElementById('hand-label').textContent = me.name+' — '+me.card_count+' карт';
+  const row=document.getElementById('hand-row');
+  if (!me.hand||me.hand.length===0) {
+    row.innerHTML='<span style="color:var(--purple);font-size:12px">Нет карт</span>'; return;
   }
-  const amAtt = myId === s.attacker_id, amDef = myId === s.defender_id;
-  const myTurn = (amAtt && s.phase === 'attack') || (amDef && s.phase === 'defend');
-  row.innerHTML = me.hand.map((card, i) => {
-    const sel = selectedHandCard && card.rank === selectedHandCard.rank && card.suit === selectedHandCard.suit;
-    let cls = 'card ' + colorCls(card) + ' card-hand';
-    if (isTrump(card)) cls += ' trump';
-    if (sel) cls += ' selected';
-    if (!myTurn) cls += ' dim';
-    return `<div class="${cls}" onclick="onHandCardClick(${i})">
+  const amAtt=myId===s.attacker_id, amDef=myId===s.defender_id;
+  // Attacker can throw cards in both attack and defend phases
+  const active = (amAtt&&(s.phase==='attack'||s.phase==='defend')) || (amDef&&s.phase==='defend');
+  row.innerHTML = me.hand.map((card,i)=>{
+    const sel = selectedHandCard&&card.rank===selectedHandCard.rank&&card.suit===selectedHandCard.suit;
+    let cls='card '+clr(card)+' card-hand';
+    if(trump(card)) cls+=' trump';
+    if(sel) cls+=' selected';
+    if(!active) cls+=' dim';
+    return `<div class="${cls}" onclick="onHandClick(${i})">
       <div class="card-rank">${esc(card.rank)}</div>
       <div class="card-suit">${card.suit}</div>
     </div>`;
@@ -549,88 +445,97 @@ function renderHand() {
 }
 
 function renderActions() {
-  const s = gameState, bar = document.getElementById('actions-bar');
-  bar.innerHTML = '';
-  const amAtt = myId === s.attacker_id, amDef = myId === s.defender_id;
-  const undefended = (s.pairs || []).filter(p => !p.defend).length;
+  const s=gameState, bar=document.getElementById('actions-bar');
+  bar.innerHTML='';
+  const amAtt=myId===s.attacker_id, amDef=myId===s.defender_id;
+  const undefended=(s.pairs||[]).filter(p=>!p.defend).length;
+  const me=s.players.find(p=>p.id===myId);
 
-  if (amDef) {
-    addBtn(bar, '🤚 Взять карты', 'btn-red', () => send({ action: 'take' }));
-  }
-  if (amAtt && s.phase === 'attack' && s.pairs && s.pairs.length > 0 && undefended === 0) {
-    addBtn(bar, '✓ Завершить ход', 'btn-blue', () => {
-      selectedHandCard = null; send({ action: 'end_turn' });
-    });
-  }
-  if (selectedHandCard && ((amAtt && s.phase === 'attack') || (amDef && s.phase === 'defend'))) {
-    addBtn(bar, 'Отмена', 'btn-ghost', () => {
-      selectedHandCard = null; renderHand(); renderTable(); renderActions();
-    });
+  if (amDef)
+    addBtn(bar,'🤚 Взять карты','btn-red',()=>send({action:'take'}));
+
+  if (amAtt && s.phase==='attack' && s.pairs&&s.pairs.length>0 && undefended===0)
+    addBtn(bar,'✓ Завершить ход','btn-blue',()=>{selectedHandCard=null;send({action:'end_turn'});});
+
+  // Cancel selection
+  if (selectedHandCard && ((amAtt&&(s.phase==='attack'||s.phase==='defend'))||(amDef&&s.phase==='defend')))
+    addBtn(bar,'Отмена','btn-ghost',()=>{selectedHandCard=null;renderHand();renderTable();renderActions();});
+
+  // Surrender button with two-step confirmation
+  if (me && !me.out) {
+    if (surrenderConfirm) {
+      const lbl=document.createElement('span');
+      lbl.className='surr-confirm'; lbl.textContent='Сдаться?';
+      bar.appendChild(lbl);
+      addBtn(bar,'Да, сдаюсь','btn-red',()=>{surrenderConfirm=false;send({action:'surrender'});});
+      addBtn(bar,'Нет','btn-ghost',()=>{surrenderConfirm=false;renderActions();});
+    } else {
+      addBtn(bar,'🏳️ Сдаться','btn-ghost',()=>{surrenderConfirm=true;renderActions();});
+    }
   }
 }
 
-function addBtn(bar, text, cls, fn) {
-  const b = document.createElement('button');
-  b.className = 'action-btn ' + cls; b.textContent = text; b.onclick = fn;
-  bar.appendChild(b);
+function addBtn(bar,text,cls,fn) {
+  const b=document.createElement('button');
+  b.className='action-btn '+cls; b.textContent=text; b.onclick=fn; bar.appendChild(b);
 }
 
 // ── INTERACTIONS ──────────────────────────────────────────────────────────────
-function onHandCardClick(idx) {
-  const s = gameState, me = s.players.find(p => p.id === myId);
-  if (!me || !me.hand) return;
-  const card = me.hand[idx];
-  const amAtt = myId === s.attacker_id, amDef = myId === s.defender_id;
+function onHandClick(idx) {
+  const s=gameState, me=s.players.find(p=>p.id===myId);
+  if (!me||!me.hand) return;
+  const card=me.hand[idx];
+  const amAtt=myId===s.attacker_id, amDef=myId===s.defender_id;
 
-  if (amAtt && s.phase === 'attack') {
-    selectedHandCard = null;
-    send({ action: 'attack', card });
-  } else if (amDef && s.phase === 'defend') {
-    selectedHandCard = (selectedHandCard?.rank === card.rank && selectedHandCard?.suit === card.suit) ? null : card;
+  if (amAtt && (s.phase==='attack'||s.phase==='defend')) {
+    // Attacker always sends attack action (server validates rank match)
+    selectedHandCard=null;
+    send({action:'attack',card});
+  } else if (amDef && s.phase==='defend') {
+    selectedHandCard = (selectedHandCard?.rank===card.rank&&selectedHandCard?.suit===card.suit)?null:card;
     renderHand(); renderTable(); renderActions();
   }
 }
 
-function onTableAttackClick(pairIdx) {
+function onTableClick(pairIdx) {
   if (!selectedHandCard) { toast('Сначала выберите карту в руке'); return; }
-  const pair = gameState.pairs[pairIdx];
-  if (!pair || pair.defend) { toast('Эта карта уже отбита'); return; }
-  send({ action: 'defend', attack_card: pair.attack, defend_card: selectedHandCard });
-  selectedHandCard = null;
+  const pair=gameState.pairs[pairIdx];
+  if (!pair||pair.defend) { toast('Эта карта уже отбита'); return; }
+  send({action:'defend',attack_card:pair.attack,defend_card:selectedHandCard});
+  selectedHandCard=null;
 }
 
 // ── END ───────────────────────────────────────────────────────────────────────
 function renderEnd() {
   playSound('win');
   showScreen('s-end');
-  const s = gameState;
-  const loser = s.players.find(p => p.finish_pos === s.players.length);
-  document.getElementById('end-sub').textContent = loser ? '🃏 Дурак: ' + loser.name : '';
-  const sorted = [...s.players].sort((a, b) => (a.finish_pos || 99) - (b.finish_pos || 99));
-  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣'];
-  document.getElementById('rank-list').innerHTML = sorted.map((p, i) => `
+  const s=gameState;
+  // Sort ascending: lowest finish_pos = winner, highest = дурак
+  const sorted=[...s.players].sort((a,b)=>(a.finish_pos||9999)-(b.finish_pos||9999));
+  const loser=sorted[sorted.length-1];
+  document.getElementById('end-sub').textContent = loser ? '🃏 Дурак: '+loser.name : '';
+  const medals=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+  document.getElementById('rank-list').innerHTML = sorted.map((p,i)=>`
     <div class="rank-row">
-      <span class="rank-medal">${medals[i] || '•'}</span>
-      <span class="rank-name">${esc(p.name)}${p.id === myId ? ' (вы)' : ''}</span>
-      <span class="rank-tag">${i === sorted.length - 1 ? '🃏 Дурак' : (i === 0 ? 'Победитель' : '')}</span>
+      <span class="rank-medal">${medals[i]||'•'}</span>
+      <span class="rank-name">${esc(p.name)}${p.id===myId?' (вы)':''}</span>
+      <span class="rank-tag">${i===sorted.length-1?'🃏 Дурак':(i===0?'Победитель':'')}</span>
     </div>`).join('');
 }
 
-function backToLobby() { send({ action: 'start' }); showScreen('s-lobby'); }
+function backToLobby() { send({action:'start'}); showScreen('s-lobby'); }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
 }
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>

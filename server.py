@@ -178,10 +178,10 @@ class Room:
         self.message = ""
         await self.send_state()
 
-    # ── Ход: атака ────────────────────────────────────────────────────────────
+    # ── Ход: атака (и подброс во время защиты) ───────────────────────────────
     async def play_attack(self, player_id: str, card: dict):
-        if self.phase != "attack":
-            return await self._err(player_id, "Сейчас не фаза атаки")
+        if self.phase not in ("attack", "defend"):
+            return await self._err(player_id, "Сейчас нельзя атаковать")
         attacker = self.players[self.attacker_idx]
         if player_id != attacker["id"]:
             return await self._err(player_id, "Сейчас атакует " + attacker["name"])
@@ -267,6 +267,36 @@ class Room:
         self._refill()
         self._check_win()
         self.message = ""
+        await self.send_state()
+
+    # ── Сдаться ───────────────────────────────────────────────────────────────
+    async def surrender(self, player_id: str):
+        player = next((p for p in self.players if p["id"] == player_id), None)
+        if not player or player["out"] or self.phase not in ("attack", "defend"):
+            return
+        # Defender takes all table cards as penalty
+        if self.players[self.defender_idx]["id"] == player_id:
+            all_cards = [p["attack"] for p in self.pairs] + \
+                        [p["defend"] for p in self.pairs if p.get("defend")]
+            player["hand"].extend(all_cards)
+        self.pairs = []
+        player["out"] = True
+        player["finish_pos"] = 9999  # Always sorts last (дурак)
+
+        was_att = self.players[self.attacker_idx]["id"] == player_id
+        was_def = self.players[self.defender_idx]["id"] == player_id
+        if was_att:
+            self.attacker_idx = self._next_active(self.attacker_idx)
+            self.defender_idx = self._next_active(self.attacker_idx)
+        elif was_def:
+            old_def = self.defender_idx
+            self.attacker_idx = self._next_active(old_def)
+            self.defender_idx = self._next_active(self.attacker_idx)
+
+        self.phase = "attack"
+        self._refill()
+        self._check_win()
+        self.message = f"{player['name']} сдался!"
         await self.send_state()
 
     # ── Подброс (переход обратно в атаку) ────────────────────────────────────
@@ -380,6 +410,8 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: 
                 await room.end_turn(player_id)
             elif action == "throw_more":
                 await room.throw_more(player_id)
+            elif action == "surrender":
+                await room.surrender(player_id)
             elif action == "ping":
                 await ws.send_text(json.dumps({"type": "pong"}))
 
