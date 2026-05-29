@@ -191,9 +191,7 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
   <div class="logo">♠ ДУРАК ♠</div>
   <div class="logo-sub">Карточная игра</div>
   <div class="join-card">
-    <div class="field-label">Ваше имя</div>
-    <input id="inp-name" class="field-input" type="text" placeholder="Имя игрока" maxlength="20">
-    <div class="field-label">ID комнаты</div>
+    <div class="field-label">Код комнаты</div>
     <input id="inp-room" class="field-input" type="text" placeholder="Например: AB12CD" maxlength="8" style="text-transform:uppercase">
     <button class="btn-gold" onclick="joinRoom()">Войти в игру</button>
   </div>
@@ -307,20 +305,19 @@ window.onload = () => {
   if (rp) document.getElementById('inp-room').value = rp.toUpperCase();
   if (tg?.initDataUnsafe?.user) {
     const u = tg.initDataUnsafe.user;
-    document.getElementById('inp-name').value = u.first_name||u.username||'';
+    myName = u.first_name || u.username || 'Игрок';
     myId = String(u.id);
   } else {
     myId = 'user_'+Math.random().toString(36).slice(2,8); // localhost dev
+    myName = 'Dev_' + myId.slice(-4);
   }
   initDragListeners();
 };
 
 // ── CONNECT ───────────────────────────────────────────────────────────────────
 function joinRoom() {
-  myName = document.getElementById('inp-name').value.trim();
   roomId = document.getElementById('inp-room').value.trim().toUpperCase();
-  if (!myName) { toast('Введите имя'); return; }
-  if (!roomId) { toast('Введите ID комнаты'); return; }
+  if (!roomId) { toast('Введите код комнаты'); return; }
   getACtx();
   connectWS();
 }
