@@ -31,6 +31,9 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
 .field-input:focus { outline:none; border-color:var(--gold); }
 .btn-gold { width:100%; padding:13px; background:var(--gold); color:#1a0a2e; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; }
 .btn-gold:active { background:var(--gold2); }
+.btn-outline { width:100%; padding:11px; background:transparent; color:var(--gold); border:1.5px solid rgba(232,200,74,.4); border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; }
+.btn-outline:active { background:rgba(232,200,74,.08); }
+.join-divider { text-align:center; color:rgba(154,127,181,.4); font-size:11px; letter-spacing:3px; margin:12px 0; }
 
 /* ── LOBBY ───────────────────────── */
 #s-lobby { padding:0; }
@@ -213,9 +216,10 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
   <div class="logo">♠ ДУРАК ♠</div>
   <div class="logo-sub">Карточная игра</div>
   <div class="join-card">
-    <div class="field-label">Код комнаты</div>
-    <input id="inp-room" class="field-input" type="text" placeholder="Например: AB12CD" maxlength="8" style="text-transform:uppercase">
-    <button class="btn-gold" onclick="joinRoom()">Войти в игру</button>
+    <button class="btn-gold" onclick="createAndJoin()">🃏 Создать игру</button>
+    <div class="join-divider">— или войти по коду —</div>
+    <input id="inp-room" class="field-input" type="text" placeholder="Например: AB12CD" maxlength="8" style="text-transform:uppercase;margin-bottom:0">
+    <button class="btn-outline" style="margin-top:8px" onclick="joinRoom()">Войти →</button>
   </div>
   <div class="rooms-section">
     <div class="rooms-label">Открытые комнаты</div>
@@ -397,6 +401,19 @@ window.onload = () => {
 };
 
 // ── CONNECT ───────────────────────────────────────────────────────────────────
+async function createAndJoin() {
+  try {
+    const resp = await fetch('/room/create', {method:'POST'});
+    if (!resp.ok) throw new Error();
+    const data = await resp.json();
+    roomId = data.room_id;
+    document.getElementById('inp-room').value = roomId;
+    getACtx();
+    connectWS();
+  } catch(e) {
+    toast('Ошибка создания комнаты');
+  }
+}
 function joinRoom() {
   roomId = document.getElementById('inp-room').value.trim().toUpperCase();
   if (!roomId) { toast('Введите код комнаты'); return; }

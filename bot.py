@@ -20,6 +20,7 @@ MINI_APP_URL = os.getenv("MINI_APP_URL", SERVER_URL)
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
+        [InlineKeyboardButton("🎮 Открыть игру", web_app=WebAppInfo(url=MINI_APP_URL))],
         [InlineKeyboardButton("🃏 Создать игру", callback_data="create_2"),
          InlineKeyboardButton("👥 2–6 игроков", callback_data="choose_players")],
     ]
