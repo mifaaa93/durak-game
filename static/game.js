@@ -10,6 +10,7 @@ let gameState = null;
 let selectedHandCard = null;
 let surrenderConfirm = false;
 let prevPairsSig = null, prevPhase = null;
+let prevLobbyIds = null;
 
 // ── DRAG STATE ────────────────────────────────────────────────────────────────
 const DRAG_THRESHOLD = 7;
@@ -41,6 +42,8 @@ function playSound(n) {
     case 'deal':    [0,1,2,3].forEach(i=>tone(500+i*55,'sine',.07,.13,i*.058)); break;
     case 'win':     [330,415,495,660].forEach((f,i)=>tone(f,'sine',.28,.22,i*.12)); break;
     case 'error':   tone(130,'square',.15,.18); break;
+    case 'join':    tone(520,'sine',.08,.2); tone(720,'sine',.08,.18,.09); tone(960,'sine',.12,.16,.17); break;
+    case 'leave':   tone(520,'sine',.08,.2); tone(380,'sine',.09,.15,.09); tone(240,'sine',.14,.12,.18); break;
   }
 }
 
@@ -141,7 +144,7 @@ function connectWS() {
   intentionalClose = false;
   if (ws) { try { ws.close(); } catch(e){} }
   ws = new WebSocket(`${SERVER}/ws/${roomId}/${myId}/${encodeURIComponent(myName)}`);
-  ws.onopen = () => showScreen('s-lobby');
+  ws.onopen = () => { showScreen('s-lobby'); playSound('join'); };
   ws.onmessage = e => handleMsg(JSON.parse(e.data));
   ws.onerror = () => toast('Помилка підключення');
   ws.onclose = () => { if (!intentionalClose) { toast("З'єднання втрачено..."); setTimeout(connectWS,2000); } };
@@ -174,7 +177,19 @@ function applyState() {
   }
   prevPairsSig=sig; prevPhase=s.phase;
 
-  if (s.phase==='lobby') { renderLobby(); return; }
+  if (s.phase==='lobby') {
+    const ids = s.players.map(p => p.id);
+    if (prevLobbyIds !== null) {
+      const joined = ids.some(id => !prevLobbyIds.includes(id));
+      const left   = prevLobbyIds.some(id => !ids.includes(id));
+      if (joined) playSound('join');
+      else if (left) playSound('leave');
+    }
+    prevLobbyIds = ids;
+    renderLobby();
+    return;
+  }
+  prevLobbyIds = null;
   if (s.phase==='end')   { renderEnd();   return; }
   showScreen('s-game');
   renderTopBar(); renderOpponents(); renderTable();
@@ -203,6 +218,7 @@ function renderLobby() {
 }
 function startGame() { send({action:'start'}); }
 function leaveRoom() {
+  playSound('leave');
   send({action:'leave_room'});
   intentionalClose = true;
   if (ws) { try { ws.close(); } catch(e){} ws=null; }
