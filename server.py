@@ -8,6 +8,7 @@ import json
 import os
 import random
 import string
+from contextlib import asynccontextmanager
 from typing import Optional
 import httpx
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -15,7 +16,101 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-app = FastAPI()
+# ── Telegram bot (polling, запускається всередині FastAPI event loop) ──────────
+_bot_app = None
+
+async def _start_bot():
+    global _bot_app
+    bot_token = os.getenv("BOT_TOKEN")
+    if not bot_token:
+        return
+    try:
+        from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+        from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+
+        server_url = os.getenv("SERVER_URL", "")
+        mini_app_url = os.getenv("MINI_APP_URL", server_url)
+
+        async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            keyboard = [
+                [InlineKeyboardButton("🎮 Відкрити гру", web_app=WebAppInfo(url=mini_app_url))],
+                [InlineKeyboardButton("🃏 Створити гру", callback_data="create_2"),
+                 InlineKeyboardButton("👥 2–6 гравців", callback_data="choose_players")],
+            ]
+            await update.message.reply_text(
+                "♠ *Дурень* ♠\n\nКарткова гра для 2–6 гравців.\n\nЩоб увійти в чужу гру:\n`/join КОД`",
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+            )
+
+        async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            query = update.callback_query
+            await query.answer()
+            data = query.data
+            if data == "choose_players":
+                buttons = [[InlineKeyboardButton(f"{n} {'гравці' if n==2 else 'гравців'}",
+                            callback_data=f"create_{n}") for n in range(2, 7)]]
+                await query.edit_message_text("Оберіть кількість гравців:",
+                                              reply_markup=InlineKeyboardMarkup(buttons))
+            elif data.startswith("create_"):
+                max_players = int(data.split("_")[1])
+                try:
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.post(f"{server_url}/room/create",
+                                                 params={"max_players": max_players})
+                        room_id = resp.json()["room_id"]
+                except Exception as e:
+                    await query.edit_message_text(f"❌ Помилка: {e}")
+                    return
+                app_url = f"{mini_app_url}?room={room_id}"
+                keyboard = [[InlineKeyboardButton("🃏 Увійти в гру", web_app=WebAppInfo(url=app_url))]]
+                await query.edit_message_text(
+                    f"✅ Кімнату створено!\n\n🔑 Код: `{room_id}`\n👥 До {max_players} гравців",
+                    parse_mode="Markdown",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                )
+
+        async def cmd_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            if not context.args:
+                await update.message.reply_text("Вкажи код кімнати:\n`/join КОД`", parse_mode="Markdown")
+                return
+            room_id = context.args[0].upper()
+            app_url = f"{mini_app_url}?room={room_id}"
+            keyboard = [[InlineKeyboardButton("🃏 Увійти в гру", web_app=WebAppInfo(url=app_url))]]
+            await update.message.reply_text(
+                f"Кімната `{room_id}` — натисни кнопку:",
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+            )
+
+        _bot_app = Application.builder().token(bot_token).build()
+        _bot_app.add_handler(CommandHandler("start", cmd_start))
+        _bot_app.add_handler(CommandHandler("join", cmd_join))
+        _bot_app.add_handler(CallbackQueryHandler(on_callback))
+        await _bot_app.initialize()
+        await _bot_app.start()
+        await _bot_app.updater.start_polling(drop_pending_updates=True)
+    except Exception as e:
+        print(f"[bot] не вдалось запустити: {e}")
+
+async def _stop_bot():
+    global _bot_app
+    if _bot_app:
+        try:
+            await _bot_app.updater.stop()
+            await _bot_app.stop()
+            await _bot_app.shutdown()
+        except Exception:
+            pass
+        _bot_app = None
+
+@asynccontextmanager
+async def lifespan(fastapi_app: FastAPI):
+    await _start_bot()
+    yield
+    await _stop_bot()
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # ── Статика (index.html) ──────────────────────────────────────────────────────
