@@ -1,5 +1,5 @@
 """
-Дурак — FastAPI + WebSocket сервер
+Дурень — FastAPI + WebSocket сервер
 Запуск: uvicorn server:app --host 0.0.0.0 --port 8000
 """
 
@@ -53,26 +53,27 @@ def card_key(c: dict) -> str:
     return c["rank"] + c["suit"]
 
 
-# ── Комната ───────────────────────────────────────────────────────────────────
+# ── Кімната ───────────────────────────────────────────────────────────────────
 class Room:
     def __init__(self, room_id: str, max_players: int):
         self.room_id = room_id
         self.max_players = max_players
-        self.connections: dict[str, WebSocket] = {}   # player_id -> ws
-        self.players: list[dict] = []                  # [{id, name, hand, out, finish_pos}]
+        self.connections: dict[str, WebSocket] = {}
+        self.players: list[dict] = []
         self.deck: list[dict] = []
         self.trump_suit: str = ""
         self.trump_card: dict = {}
-        self.pairs: list[dict] = []   # [{attack, defend|None}]
+        self.pairs: list[dict] = []
         self.attacker_idx: int = 0
         self.defender_idx: int = 1
-        self.phase: str = "lobby"     # lobby | attack | defend | end
+        self.phase: str = "lobby"     # lobby | attack | defend | taking | end
         self.finish_count: int = 0
         self.message: str = ""
         self.host_id: str = ""
         self.disconnect_tasks: dict[str, asyncio.Task] = {}
+        self.pass_set: set = set()    # гравці що натиснули пас під час taking
 
-    # ── Рассылка ──────────────────────────────────────────────────────────────
+    # ── Розсилка ──────────────────────────────────────────────────────────────
     async def broadcast(self, msg: dict):
         dead = []
         for pid, ws in self.connections.items():
@@ -84,7 +85,6 @@ class Room:
             self.connections.pop(pid, None)
 
     async def send_state(self):
-        """Отправляем каждому игроку его персональное состояние."""
         for player in self.players:
             ws = self.connections.get(player["id"])
             if not ws:
@@ -96,7 +96,6 @@ class Room:
                 pass
 
     def _build_state(self, viewer_id: str) -> dict:
-        """Строим состояние для конкретного игрока — он видит только свои карты."""
         players_view = []
         for p in self.players:
             is_me = p["id"] == viewer_id
@@ -104,7 +103,7 @@ class Room:
                 "id": p["id"],
                 "name": p["name"],
                 "card_count": len(p["hand"]),
-                "hand": p["hand"] if is_me else [],   # только свои карты
+                "hand": p["hand"] if is_me else [],
                 "out": p["out"],
                 "finish_pos": p["finish_pos"],
             })
@@ -123,22 +122,23 @@ class Room:
             "defender_id": defender.get("id", ""),
             "message": self.message,
             "host_id": self.host_id,
+            "pass_set": list(self.pass_set),
         }
 
-    # ── Таймаут отключения ────────────────────────────────────────────────────
+    # ── Таймаут відключення ───────────────────────────────────────────────────
     async def handle_disconnect_timeout(self, player_id: str):
         try:
             await asyncio.sleep(10)
         except asyncio.CancelledError:
-            return  # Игрок переподключился — задача отменена
+            return
 
         self.disconnect_tasks.pop(player_id, None)
         if player_id in self.connections:
-            return  # Успел переподключиться
+            return
 
         player = next((p for p in self.players if p["id"] == player_id), None)
 
-        if self.phase in ("attack", "defend") and player and not player["out"]:
+        if self.phase in ("attack", "defend", "taking") and player and not player["out"]:
             await self.surrender(player_id)
         elif self.phase == "lobby" and player:
             self.players = [p for p in self.players if p["id"] != player_id]
@@ -147,22 +147,19 @@ class Room:
             if self.connections:
                 await self.send_state()
 
-        # Удаляем пустую комнату
         if not self.connections:
             rooms.pop(self.room_id, None)
 
-    # ── Вход в комнату ────────────────────────────────────────────────────────
+    # ── Вхід у кімнату ────────────────────────────────────────────────────────
     async def join(self, player_id: str, name: str, ws: WebSocket):
-        # Отменяем таймаут отключения если игрок переподключается
         task = self.disconnect_tasks.pop(player_id, None)
         if task:
             task.cancel()
         self.connections[player_id] = ws
-        # Если игрок уже есть — переподключение
         existing = next((p for p in self.players if p["id"] == player_id), None)
         if not existing:
             if len(self.players) >= self.max_players:
-                await ws.send_text(json.dumps({"type": "error", "msg": "Комната заполнена"}))
+                await ws.send_text(json.dumps({"type": "error", "msg": "Кімната заповнена"}))
                 return
             player = {"id": player_id, "name": name, "hand": [], "out": False, "finish_pos": None}
             self.players.append(player)
@@ -170,32 +167,30 @@ class Room:
                 self.host_id = player_id
         await self.send_state()
 
-    # ── Старт игры ────────────────────────────────────────────────────────────
+    # ── Старт гри ─────────────────────────────────────────────────────────────
     async def start_game(self, requester_id: str):
         if requester_id != self.host_id:
             return
         if len(self.players) < 2:
-            await self.broadcast({"type": "error", "msg": "Нужно минимум 2 игрока"})
+            await self.broadcast({"type": "error", "msg": "Потрібно мінімум 2 гравці"})
             return
         self.deck = make_deck()
         trump = self.deck[-1]
         self.trump_suit = trump["suit"]
         self.trump_card = trump
 
-        # Сброс рук
         for p in self.players:
             p["hand"] = []
             p["out"] = False
             p["finish_pos"] = None
         self.finish_count = 0
+        self.pass_set = set()
 
-        # Раздача по 6 карт
         for _ in range(6):
             for p in self.players:
                 if self.deck:
                     p["hand"].append(self.deck.pop(0))
 
-        # Первый ход — у кого наименьший козырь
         min_val, first = 99, 0
         for i, p in enumerate(self.players):
             for c in p["hand"]:
@@ -209,89 +204,126 @@ class Room:
         self.message = ""
         await self.send_state()
 
-    # ── Ход: атака (и подброс во время защиты) ───────────────────────────────
+    # ── Хід: атака (і підкид під час захисту/взяття) ─────────────────────────
     async def play_attack(self, player_id: str, card: dict):
-        if self.phase not in ("attack", "defend"):
-            return await self._err(player_id, "Сейчас нельзя атаковать")
+        if self.phase not in ("attack", "defend", "taking"):
+            return await self._err(player_id, "Зараз не можна атакувати")
         attacker = self.players[self.attacker_idx]
         if player_id != attacker["id"]:
-            return await self._err(player_id, "Сейчас атакует " + attacker["name"])
+            return await self._err(player_id, "Зараз атакує " + attacker["name"])
 
-        # Проверка: карта допустима?
         if self.pairs:
             ranks_on_table = {card_key_rank(p["attack"]) for p in self.pairs}
             for p in self.pairs:
                 if p.get("defend"):
                     ranks_on_table.add(card_key_rank(p["defend"]))
             if card["rank"] not in ranks_on_table:
-                return await self._err(player_id, "Можно подбрасывать только карты тех же достоинств")
+                return await self._err(player_id, "Можна підкидати лише карти тих самих гідностей")
 
         defender = self.players[self.defender_idx]
         max_cards = min(len(defender["hand"]) + len([p for p in self.pairs if p.get("defend")]), 6)
         if len(self.pairs) >= max_cards:
-            return await self._err(player_id, "Больше нельзя подбросить")
+            return await self._err(player_id, "Більше не можна підкинути")
 
         if not self._remove_card(attacker, card):
-            return await self._err(player_id, "Такой карты нет в руке")
+            return await self._err(player_id, "Такої карти немає в руці")
 
         self.pairs.append({"attack": card, "defend": None})
-        self.phase = "defend"
-        self.message = f"{defender['name']} отбивает..."
+        if self.phase != "taking":
+            self.phase = "defend"
+            self.message = f"{defender['name']} відбиває..."
         await self.send_state()
 
-    # ── Ход: защита ───────────────────────────────────────────────────────────
+    # ── Хід: захист ───────────────────────────────────────────────────────────
     async def play_defend(self, player_id: str, attack_card: dict, defend_card: dict):
         if self.phase != "defend":
-            return await self._err(player_id, "Сейчас не фаза защиты")
+            return await self._err(player_id, "Зараз не фаза захисту")
         defender = self.players[self.defender_idx]
         if player_id != defender["id"]:
-            return await self._err(player_id, "Сейчас отбивает " + defender["name"])
+            return await self._err(player_id, "Зараз відбиває " + defender["name"])
 
         pair = next((p for p in self.pairs
                      if card_key(p["attack"]) == card_key(attack_card) and not p.get("defend")), None)
         if not pair:
-            return await self._err(player_id, "Эта карта уже отбита или не найдена")
+            return await self._err(player_id, "Ця карта вже відбита або не знайдена")
         if not beats(attack_card, defend_card, self.trump_suit):
-            return await self._err(player_id, "Карта не бьёт!")
+            return await self._err(player_id, "Карта не б'є!")
         if not self._remove_card(defender, defend_card):
-            return await self._err(player_id, "Такой карты нет в руке")
+            return await self._err(player_id, "Такої карти немає в руці")
 
         pair["defend"] = defend_card
         undefended = [p for p in self.pairs if not p.get("defend")]
         if not undefended:
             self.phase = "attack"
-            self.message = "Всё отбито! Можно подбросить или завершить ход."
+            self.message = "Все відбито! Можна підкинути або завершити хід."
         await self.send_state()
 
-    # ── Взять карты ───────────────────────────────────────────────────────────
+    # ── Взяти карти (ініціюємо фазу taking) ──────────────────────────────────
     async def take_cards(self, player_id: str):
+        if self.phase != "defend":
+            return
         defender = self.players[self.defender_idx]
         if player_id != defender["id"]:
-            return await self._err(player_id, "Только защищающийся может взять карты")
+            return await self._err(player_id, "Лише захисник може взяти карти")
+
+        non_defenders = [p for p in self.players if not p["out"] and p["id"] != defender["id"]]
+        if not non_defenders:
+            await self._execute_take()
+            return
+
+        self.phase = "taking"
+        self.pass_set = set()
+        self.message = f"{defender['name']} бере карти — підкидайте або пас"
+        await self.send_state()
+
+    # ── Пас під час taking ────────────────────────────────────────────────────
+    async def pass_throw(self, player_id: str):
+        if self.phase != "taking":
+            return
+        defender = self.players[self.defender_idx]
+        if player_id == defender["id"]:
+            return
+        player = next((p for p in self.players if p["id"] == player_id), None)
+        if not player or player["out"]:
+            return
+
+        self.pass_set.add(player_id)
+
+        non_defenders = [p for p in self.players if not p["out"] and p["id"] != defender["id"]]
+        if all(p["id"] in self.pass_set for p in non_defenders):
+            await self._execute_take()
+        else:
+            remaining = len(non_defenders) - len(self.pass_set)
+            self.message = f"Чекаємо пасу ще від {remaining} гравця..."
+            await self.send_state()
+
+    # ── Виконати взяття карт ──────────────────────────────────────────────────
+    async def _execute_take(self):
+        defender = self.players[self.defender_idx]
         all_cards = [p["attack"] for p in self.pairs] + \
                     [p["defend"] for p in self.pairs if p.get("defend")]
         defender["hand"].extend(all_cards)
         self.pairs = []
+        self.pass_set = set()
         old_def_idx = self.defender_idx
         self.attacker_idx = self._next_active(old_def_idx)
         self.defender_idx = self._next_active(self.attacker_idx)
         self.phase = "attack"
         self._refill()
         self._check_win()
-        self.message = f"{defender['name']} взял карты!"
+        self.message = f"{defender['name']} взяв карти!"
         await self.send_state()
 
-    # ── Завершить ход (отбито) ────────────────────────────────────────────────
+    # ── Завершити хід (відбито) ───────────────────────────────────────────────
     async def end_turn(self, player_id: str):
         attacker = self.players[self.attacker_idx]
         if player_id != attacker["id"]:
-            return await self._err(player_id, "Только атакующий может завершить ход")
+            return await self._err(player_id, "Лише атакуючий може завершити хід")
         undefended = [p for p in self.pairs if not p.get("defend")]
         if undefended:
-            return await self._err(player_id, "Есть неотбитые карты!")
+            return await self._err(player_id, "Є невідбиті карти!")
         self.pairs = []
         old_def_idx = self.defender_idx
-        # After successful defense the defender becomes the new attacker
         self.attacker_idx = old_def_idx
         self.defender_idx = self._next_active(old_def_idx)
         self.phase = "attack"
@@ -300,19 +332,19 @@ class Room:
         self.message = ""
         await self.send_state()
 
-    # ── Сдаться ───────────────────────────────────────────────────────────────
+    # ── Здатися ───────────────────────────────────────────────────────────────
     async def surrender(self, player_id: str):
         player = next((p for p in self.players if p["id"] == player_id), None)
-        if not player or player["out"] or self.phase not in ("attack", "defend"):
+        if not player or player["out"] or self.phase not in ("attack", "defend", "taking"):
             return
-        # Defender takes all table cards as penalty
         if self.players[self.defender_idx]["id"] == player_id:
             all_cards = [p["attack"] for p in self.pairs] + \
                         [p["defend"] for p in self.pairs if p.get("defend")]
             player["hand"].extend(all_cards)
         self.pairs = []
+        self.pass_set = set()
         player["out"] = True
-        player["finish_pos"] = 9999  # Always sorts last (дурак)
+        player["finish_pos"] = 9999
 
         was_att = self.players[self.attacker_idx]["id"] == player_id
         was_def = self.players[self.defender_idx]["id"] == player_id
@@ -327,10 +359,10 @@ class Room:
         self.phase = "attack"
         self._refill()
         self._check_win()
-        self.message = f"{player['name']} сдался!"
+        self.message = f"{player['name']} здався!"
         await self.send_state()
 
-    # ── Покинуть лобби ───────────────────────────────────────────────────────
+    # ── Покинути лобі ─────────────────────────────────────────────────────────
     async def leave_room(self, player_id: str):
         if self.phase != "lobby":
             return
@@ -343,19 +375,19 @@ class Room:
         else:
             await self.send_state()
 
-    # ── Подброс (переход обратно в атаку) ────────────────────────────────────
+    # ── Підкид (перехід назад в атаку) ───────────────────────────────────────
     async def throw_more(self, player_id: str):
         attacker = self.players[self.attacker_idx]
         if player_id != attacker["id"]:
             return
         undefended = [p for p in self.pairs if not p.get("defend")]
         if undefended:
-            return await self._err(player_id, "Сначала нужно отбить все карты")
+            return await self._err(player_id, "Спочатку потрібно відбити всі карти")
         self.phase = "attack"
-        self.message = "Подбрасывайте карты или завершайте ход."
+        self.message = "Підкидайте карти або завершуйте хід."
         await self.send_state()
 
-    # ── Внутренние методы ─────────────────────────────────────────────────────
+    # ── Внутрішні методи ──────────────────────────────────────────────────────
     def _next_active(self, from_idx: int) -> int:
         idx = (from_idx + 1) % len(self.players)
         for _ in range(len(self.players)):
@@ -411,7 +443,7 @@ def card_key_rank(c: dict) -> str:
     return c["rank"]
 
 
-# ── HTTP: создать комнату ─────────────────────────────────────────────────────
+# ── HTTP: створити кімнату ────────────────────────────────────────────────────
 @app.post("/room/create")
 async def create_room(max_players: int = 6):
     room_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -437,12 +469,12 @@ async def list_rooms():
     return result
 
 
-# ── WebSocket ────────────────────────────────────────────────────────────────
+# ── WebSocket ─────────────────────────────────────────────────────────────────
 @app.websocket("/ws/{room_id}/{player_id}/{name}")
 async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: str):
     await ws.accept()
     if room_id not in rooms:
-        await ws.send_text(json.dumps({"type": "error", "msg": "Комната не найдена"}))
+        await ws.send_text(json.dumps({"type": "error", "msg": "Кімнату не знайдено"}))
         await ws.close()
         return
 
@@ -463,6 +495,8 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: 
                 await room.play_defend(player_id, msg["attack_card"], msg["defend_card"])
             elif action == "take":
                 await room.take_cards(player_id)
+            elif action == "pass":
+                await room.pass_throw(player_id)
             elif action == "end_turn":
                 await room.end_turn(player_id)
             elif action == "throw_more":
@@ -477,10 +511,9 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: 
 
     except WebSocketDisconnect:
         room.connections.pop(player_id, None)
-        # Даём 10 секунд на переподключение, иначе — форфейт/очистка
         task = asyncio.create_task(room.handle_disconnect_timeout(player_id))
         room.disconnect_tasks[player_id] = task
         await room.broadcast({
             "type": "player_disconnected",
-            "msg": "Игрок отключился"
+            "msg": "Гравець відключився"
         })
