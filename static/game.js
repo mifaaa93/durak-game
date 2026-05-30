@@ -518,8 +518,9 @@ function renderEnd() {
     </div>`).join('');
 }
 
-function backToLobby() { send({action:'start'}); showScreen('s-lobby'); }
+function backToLobby() { send({action:'rematch'}); }
 function goHome() {
+  send({action:'leave_end'});
   intentionalClose = true;
   if (ws) { try { ws.close(); } catch(e){} ws=null; }
   roomId='';

@@ -5,9 +5,11 @@
 
 import asyncio
 import json
+import os
 import random
 import string
 from typing import Optional
+import httpx
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -75,6 +77,7 @@ class Room:
         self.host_id: str = ""
         self.disconnect_tasks: dict[str, asyncio.Task] = {}
         self.pass_set: set = set()    # гравці що натиснули пас під час taking
+        self.rematch_set: set = set() # гравці що хочуть зіграти ще раз
 
     # ── Розсилка ──────────────────────────────────────────────────────────────
     async def broadcast(self, msg: dict):
@@ -188,6 +191,7 @@ class Room:
             p["finish_pos"] = None
         self.finish_count = 0
         self.pass_set = set()
+        self.rematch_set = set()
 
         for _ in range(6):
             for p in self.players:
@@ -378,6 +382,39 @@ class Room:
         else:
             await self.send_state()
 
+    # ── Реванш: гравець хоче зіграти ще раз ─────────────────────────────────
+    async def rematch(self, player_id: str):
+        if self.phase != "end":
+            return
+        self.rematch_set.add(player_id)
+        if len(self.rematch_set) == 1:
+            self.host_id = player_id
+            self.phase = "lobby"
+            self.message = ""
+        await self.send_state()
+
+    # ── Вихід з екрану результатів ────────────────────────────────────────────
+    async def leave_end(self, player_id: str):
+        if self.phase not in ("end", "lobby"):
+            return
+        # Якщо є гравці що хочуть реванш — надсилаємо TG-повідомлення тому хто виходить
+        if self.rematch_set:
+            rematcher = next(
+                (p for p in self.players if p["id"] in self.rematch_set and p["id"] != player_id),
+                None
+            )
+            if rematcher:
+                asyncio.create_task(send_tg_invite(player_id, rematcher["name"], self.room_id))
+
+        self.players = [p for p in self.players if p["id"] != player_id]
+        self.connections.pop(player_id, None)
+        self.rematch_set.discard(player_id)
+
+        if not self.players:
+            rooms.pop(self.room_id, None)
+        else:
+            await self.send_state()
+
     # ── Підкид (перехід назад в атаку) ───────────────────────────────────────
     async def throw_more(self, player_id: str):
         attacker = self.players[self.attacker_idx]
@@ -446,6 +483,32 @@ def card_key_rank(c: dict) -> str:
     return c["rank"]
 
 
+# ── Telegram-повідомлення про реванш ─────────────────────────────────────────
+async def send_tg_invite(to_player_id: str, from_player_name: str, room_id: str):
+    bot_token = os.getenv("BOT_TOKEN", "")
+    server_url = os.getenv("SERVER_URL", "https://durak-game-production-affa.up.railway.app")
+    if not bot_token:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            await client.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={
+                    "chat_id": to_player_id,
+                    "text": f"🃏 *{from_player_name}* пропонує зіграти ще раз!",
+                    "parse_mode": "Markdown",
+                    "reply_markup": {
+                        "inline_keyboard": [[{
+                            "text": "🎮 Приєднатися →",
+                            "web_app": {"url": f"{server_url}?room={room_id}"}
+                        }]]
+                    },
+                },
+            )
+    except Exception:
+        pass
+
+
 # ── HTTP: створити кімнату ────────────────────────────────────────────────────
 @app.post("/room/create")
 async def create_room(max_players: int = 6):
@@ -506,6 +569,11 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: 
                 await room.throw_more(player_id)
             elif action == "surrender":
                 await room.surrender(player_id)
+            elif action == "rematch":
+                await room.rematch(player_id)
+            elif action == "leave_end":
+                await room.leave_end(player_id)
+                break
             elif action == "leave_room":
                 await room.leave_room(player_id)
                 break
