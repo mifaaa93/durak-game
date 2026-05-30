@@ -28,19 +28,27 @@ async def _start_bot():
         from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
         from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-        server_url = os.getenv("SERVER_URL", "")
-        mini_app_url = os.getenv("MINI_APP_URL", server_url)
+        server_url = os.getenv("SERVER_URL") or ""
+        mini_app_url = os.getenv("MINI_APP_URL") or server_url
+        if not mini_app_url:
+            print("[bot] SERVER_URL / MINI_APP_URL не задано — бот запущено без web_app кнопок")
+
+        def _open_btn(label: str, url: str):
+            return InlineKeyboardButton(label, web_app=WebAppInfo(url=url)) if url else \
+                   InlineKeyboardButton(label, url=url or "https://t.me")
 
         async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            keyboard = [
-                [InlineKeyboardButton("🎮 Відкрити гру", web_app=WebAppInfo(url=mini_app_url))],
-                [InlineKeyboardButton("🃏 Створити гру", callback_data="create_2"),
-                 InlineKeyboardButton("👥 2–6 гравців", callback_data="choose_players")],
-            ]
+            rows = []
+            if mini_app_url:
+                rows.append([_open_btn("🎮 Відкрити гру", mini_app_url)])
+            rows.append([
+                InlineKeyboardButton("🃏 Створити гру", callback_data="create_2"),
+                InlineKeyboardButton("👥 2–6 гравців", callback_data="choose_players"),
+            ])
             await update.message.reply_text(
                 "♠ *Дурень* ♠\n\nКарткова гра для 2–6 гравців.\n\nЩоб увійти в чужу гру:\n`/join КОД`",
                 parse_mode="Markdown",
-                reply_markup=InlineKeyboardMarkup(keyboard),
+                reply_markup=InlineKeyboardMarkup(rows),
             )
 
         async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -54,6 +62,9 @@ async def _start_bot():
                                               reply_markup=InlineKeyboardMarkup(buttons))
             elif data.startswith("create_"):
                 max_players = int(data.split("_")[1])
+                if not server_url:
+                    await query.edit_message_text("❌ SERVER_URL не задано на сервері")
+                    return
                 try:
                     async with httpx.AsyncClient() as client:
                         resp = await client.post(f"{server_url}/room/create",
@@ -63,7 +74,7 @@ async def _start_bot():
                     await query.edit_message_text(f"❌ Помилка: {e}")
                     return
                 app_url = f"{mini_app_url}?room={room_id}"
-                keyboard = [[InlineKeyboardButton("🃏 Увійти в гру", web_app=WebAppInfo(url=app_url))]]
+                keyboard = [[_open_btn("🃏 Увійти в гру", app_url)]]
                 await query.edit_message_text(
                     f"✅ Кімнату створено!\n\n🔑 Код: `{room_id}`\n👥 До {max_players} гравців",
                     parse_mode="Markdown",
@@ -75,12 +86,12 @@ async def _start_bot():
                 await update.message.reply_text("Вкажи код кімнати:\n`/join КОД`", parse_mode="Markdown")
                 return
             room_id = context.args[0].upper()
-            app_url = f"{mini_app_url}?room={room_id}"
-            keyboard = [[InlineKeyboardButton("🃏 Увійти в гру", web_app=WebAppInfo(url=app_url))]]
+            app_url = f"{mini_app_url}?room={room_id}" if mini_app_url else ""
+            keyboard = [[_open_btn("🃏 Увійти в гру", app_url)]] if app_url else []
             await update.message.reply_text(
                 f"Кімната `{room_id}` — натисни кнопку:",
                 parse_mode="Markdown",
-                reply_markup=InlineKeyboardMarkup(keyboard),
+                reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None,
             )
 
         _bot_app = Application.builder().token(bot_token).build()
