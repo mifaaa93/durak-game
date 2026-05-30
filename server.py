@@ -76,8 +76,9 @@ class Room:
         self.message: str = ""
         self.host_id: str = ""
         self.disconnect_tasks: dict[str, asyncio.Task] = {}
-        self.pass_set: set = set()    # гравці що натиснули пас під час taking
-        self.rematch_set: set = set() # гравці що хочуть зіграти ще раз
+        self.pass_set: set = set()           # гравці що натиснули пас під час taking
+        self.rematch_set: set = set()        # гравці що хочуть зіграти ще раз
+        self.departed: dict[str, str] = {}   # player_id → name (пішли з end-екрану)
 
     # ── Розсилка ──────────────────────────────────────────────────────────────
     async def broadcast(self, msg: dict):
@@ -192,6 +193,7 @@ class Room:
         self.finish_count = 0
         self.pass_set = set()
         self.rematch_set = set()
+        self.departed = {}
 
         for _ in range(6):
             for p in self.players:
@@ -373,8 +375,17 @@ class Room:
     async def leave_room(self, player_id: str):
         if self.phase != "lobby":
             return
+        # Якщо лобі відкрите після реваншу — надсилаємо TG-запрошення
+        if self.rematch_set:
+            rematcher = next(
+                (p for p in self.players if p["id"] in self.rematch_set and p["id"] != player_id),
+                None,
+            )
+            if rematcher:
+                asyncio.create_task(send_tg_invite(player_id, rematcher["name"], self.room_id))
         self.players = [p for p in self.players if p["id"] != player_id]
         self.connections.pop(player_id, None)
+        self.rematch_set.discard(player_id)
         if self.host_id == player_id:
             self.host_id = self.players[0]["id"] if self.players else ""
         if not self.players:
@@ -387,6 +398,12 @@ class Room:
         if self.phase != "end":
             return
         self.rematch_set.add(player_id)
+        # Повідомляємо всіх хто вже пішов
+        rematcher = next((p for p in self.players if p["id"] == player_id), None)
+        rematcher_name = rematcher["name"] if rematcher else "Гравець"
+        for dep_id in list(self.departed):
+            asyncio.create_task(send_tg_invite(dep_id, rematcher_name, self.room_id))
+        self.departed.clear()
         if len(self.rematch_set) == 1:
             self.host_id = player_id
             self.phase = "lobby"
@@ -397,14 +414,20 @@ class Room:
     async def leave_end(self, player_id: str):
         if self.phase not in ("end", "lobby"):
             return
-        # Якщо є гравці що хочуть реванш — надсилаємо TG-повідомлення тому хто виходить
+        player = next((p for p in self.players if p["id"] == player_id), None)
+        player_name = player["name"] if player else ""
+
         if self.rematch_set:
+            # Вже є охочі грати — повідомляємо одразу
             rematcher = next(
                 (p for p in self.players if p["id"] in self.rematch_set and p["id"] != player_id),
-                None
+                None,
             )
             if rematcher:
                 asyncio.create_task(send_tg_invite(player_id, rematcher["name"], self.room_id))
+        elif player_name:
+            # Запам'ятовуємо — повідомимо коли хтось натисне реванш
+            self.departed[player_id] = player_name
 
         self.players = [p for p in self.players if p["id"] != player_id]
         self.connections.pop(player_id, None)
@@ -485,7 +508,7 @@ def card_key_rank(c: dict) -> str:
 
 # ── Telegram-повідомлення про реванш ─────────────────────────────────────────
 async def send_tg_invite(to_player_id: str, from_player_name: str, room_id: str):
-    bot_token = os.getenv("BOT_TOKEN", "")
+    bot_token = os.getenv("BOT_TOKEN", "8849583992:AAGhnFbaokH4evsWAKljFMnX1CKM4Ws-Zt4")
     server_url = os.getenv("SERVER_URL", "https://durak-game-production-affa.up.railway.app")
     if not bot_token:
         return
