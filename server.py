@@ -127,6 +127,7 @@ async def _start_bot():
             # Перевіряємо статус webhook
             info = await _bot_app.bot.get_webhook_info()
             print(f"[bot] WebhookInfo: url={info.url!r}, pending={info.pending_update_count}, "
+                  f"allowed_updates={info.allowed_updates}, "
                   f"last_error={info.last_error_message!r}, last_error_date={info.last_error_date}")
         else:
             print("[bot] SERVER_URL не задано — webhook не встановлено")
@@ -153,13 +154,22 @@ async def lifespan(fastapi_app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+@app.get("/telegram/webhook")
+async def telegram_webhook_health():
+    return {"ok": True}
+
 @app.post("/telegram/webhook")
 async def telegram_webhook(request: Request):
     if _bot_app is None:
         print("[webhook] _bot_app is None!")
         return {"ok": False}
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": True}
+    if not isinstance(data, dict) or "update_id" not in data:
+        return {"ok": True}
     from telegram import Update
-    data = await request.json()
     update_type = next((k for k in ("message", "callback_query", "inline_query") if k in data), "unknown")
     print(f"[webhook] update #{data.get('update_id')} type={update_type}")
     try:
