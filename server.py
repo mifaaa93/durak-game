@@ -138,7 +138,6 @@ async def _stop_bot():
     global _bot_app
     if _bot_app:
         try:
-            await _bot_app.bot.delete_webhook()
             await _bot_app.stop()
             await _bot_app.shutdown()
         except Exception:
