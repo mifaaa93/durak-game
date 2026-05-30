@@ -53,33 +53,43 @@ async def _start_bot():
 
         async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             query = update.callback_query
-            await query.answer()
-            data = query.data
-            if data == "choose_players":
-                buttons = [[InlineKeyboardButton(f"{n} {'гравці' if n==2 else 'гравців'}",
-                            callback_data=f"create_{n}") for n in range(2, 7)]]
-                await query.edit_message_text("Оберіть кількість гравців:",
-                                              reply_markup=InlineKeyboardMarkup(buttons))
-            elif data.startswith("create_"):
-                max_players = int(data.split("_")[1])
-                if not server_url:
-                    await query.edit_message_text("❌ SERVER_URL не задано на сервері")
-                    return
-                try:
-                    async with httpx.AsyncClient() as client:
-                        resp = await client.post(f"{server_url}/room/create",
-                                                 params={"max_players": max_players})
-                        room_id = resp.json()["room_id"]
-                except Exception as e:
-                    await query.edit_message_text(f"❌ Помилка: {e}")
-                    return
-                app_url = f"{mini_app_url}?room={room_id}"
-                keyboard = [[_open_btn("🃏 Увійти в гру", app_url)]]
-                await query.edit_message_text(
-                    f"✅ Кімнату створено!\n\n🔑 Код: `{room_id}`\n👥 До {max_players} гравців",
-                    parse_mode="Markdown",
-                    reply_markup=InlineKeyboardMarkup(keyboard),
-                )
+            print(f"[bot] callback_query отримано: {query.data!r} від {query.from_user.id}")
+            try:
+                await query.answer()
+                data = query.data
+                if data == "choose_players":
+                    buttons = [[InlineKeyboardButton(f"{n} {'гравці' if n==2 else 'гравців'}",
+                                callback_data=f"create_{n}") for n in range(2, 7)]]
+                    await query.edit_message_text("Оберіть кількість гравців:",
+                                                  reply_markup=InlineKeyboardMarkup(buttons))
+                elif data.startswith("create_"):
+                    max_players = int(data.split("_")[1])
+                    if not server_url:
+                        await query.edit_message_text("❌ SERVER_URL не задано на сервері")
+                        return
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            resp = await client.post(f"{server_url}/room/create",
+                                                     params={"max_players": max_players})
+                            room_id = resp.json()["room_id"]
+                    except Exception as e:
+                        print(f"[bot] помилка створення кімнати: {e}")
+                        await query.edit_message_text(f"❌ Помилка: {e}")
+                        return
+                    if mini_app_url:
+                        app_url = f"{mini_app_url}?room={room_id}"
+                        keyboard = [[_open_btn("🃏 Увійти в гру", app_url)]]
+                    else:
+                        keyboard = []
+                    text = f"✅ Кімнату створено!\n\n🔑 Код: `{room_id}`\n👥 До {max_players} гравців"
+                    await query.edit_message_text(
+                        text,
+                        parse_mode="Markdown",
+                        reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None,
+                    )
+                    print(f"[bot] кімнату {room_id} створено")
+            except Exception as e:
+                print(f"[bot] помилка в on_callback: {e!r}")
 
         async def cmd_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if not context.args:
@@ -94,11 +104,15 @@ async def _start_bot():
                 reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None,
             )
 
+        async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE):
+            print(f"[bot] ПОМИЛКА PTB: {context.error!r} | update={update!r}")
+
         # updater=None — відключаємо polling, використовуємо webhook
         _bot_app = Application.builder().token(bot_token).updater(None).build()
         _bot_app.add_handler(CommandHandler("start", cmd_start))
         _bot_app.add_handler(CommandHandler("join", cmd_join))
         _bot_app.add_handler(CallbackQueryHandler(on_callback))
+        _bot_app.add_error_handler(on_error)
         await _bot_app.initialize()
         await _bot_app.start()
 
@@ -138,11 +152,17 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 @app.post("/telegram/webhook")
 async def telegram_webhook(request: Request):
     if _bot_app is None:
+        print("[webhook] _bot_app is None!")
         return {"ok": False}
     from telegram import Update
     data = await request.json()
-    update = Update.de_json(data, _bot_app.bot)
-    await _bot_app.process_update(update)
+    update_type = next((k for k in ("message", "callback_query", "inline_query") if k in data), "unknown")
+    print(f"[webhook] update #{data.get('update_id')} type={update_type}")
+    try:
+        update = Update.de_json(data, _bot_app.bot)
+        await _bot_app.process_update(update)
+    except Exception as e:
+        print(f"[webhook] помилка process_update: {e!r}")
     return {"ok": True}
 
 # ── Статика (index.html) ──────────────────────────────────────────────────────
