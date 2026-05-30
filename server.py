@@ -120,10 +120,14 @@ async def _start_bot():
             webhook_url = f"{server_url}/telegram/webhook"
             await _bot_app.bot.set_webhook(
                 url=webhook_url,
-                drop_pending_updates=True,
+                drop_pending_updates=False,
                 allowed_updates=["message", "callback_query"],
             )
             print(f"[bot] Webhook встановлено: {webhook_url}")
+            # Перевіряємо статус webhook
+            info = await _bot_app.bot.get_webhook_info()
+            print(f"[bot] WebhookInfo: url={info.url!r}, pending={info.pending_update_count}, "
+                  f"last_error={info.last_error_message!r}, last_error_date={info.last_error_date}")
         else:
             print("[bot] SERVER_URL не задано — webhook не встановлено")
     except Exception as e:
