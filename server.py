@@ -28,8 +28,8 @@ async def _start_bot():
         from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
         from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-        server_url = os.getenv("SERVER_URL") or ""
-        mini_app_url = os.getenv("MINI_APP_URL") or server_url
+        server_url = os.getenv("SERVER_URL")
+        mini_app_url = os.getenv("MINI_APP_URL")
         if not mini_app_url:
             print("[bot] SERVER_URL / MINI_APP_URL не задано — бот запущено без web_app кнопок")
 
