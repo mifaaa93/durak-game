@@ -121,9 +121,16 @@ window.onload = () => {
 };
 
 // ── CONNECT ───────────────────────────────────────────────────────────────────
+let selectedMaxPlayers = 2;
+function selectCount(btn, n) {
+  selectedMaxPlayers = n;
+  document.querySelectorAll('.cnt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
 async function createAndJoin() {
   try {
-    const resp = await fetch('/room/create', {method:'POST'});
+    const resp = await fetch(`/room/create?max_players=${selectedMaxPlayers}`, {method:'POST'});
     if (!resp.ok) throw new Error();
     const data = await resp.json();
     roomId = data.room_id;

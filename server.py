@@ -359,6 +359,8 @@ class Room:
             if not self.host_id:
                 self.host_id = player_id
         await self.send_state()
+        if self.phase == "lobby" and len(self.players) == self.max_players:
+            await self.start_game(self.host_id)
 
     # ── Старт гри ─────────────────────────────────────────────────────────────
     async def start_game(self, requester_id: str):

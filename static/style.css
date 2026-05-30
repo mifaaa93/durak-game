@@ -26,6 +26,12 @@ body { font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--b
 .btn-outline { width:100%; padding:11px; background:transparent; color:var(--gold); border:1.5px solid rgba(232,200,74,.4); border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; }
 .btn-outline:active { background:rgba(232,200,74,.08); }
 .join-divider { text-align:center; color:rgba(154,127,181,.4); font-size:11px; letter-spacing:3px; margin:12px 0; }
+.create-section { display:flex; flex-direction:column; gap:10px; }
+.create-label { font-size:12px; color:var(--purple); text-align:center; letter-spacing:.5px; }
+.player-count-row { display:flex; gap:6px; justify-content:center; }
+.cnt-btn { flex:1; padding:8px 0; background:rgba(255,255,255,.06); border:1.5px solid rgba(232,200,74,.2); border-radius:8px; color:var(--purple); font-size:15px; font-weight:600; cursor:pointer; transition:all .15s; }
+.cnt-btn.active { background:rgba(232,200,74,.15); border-color:var(--gold); color:var(--gold); }
+.cnt-btn:active { opacity:.7; }
 
 /* ── LOBBY ───────────────────────── */
 #s-lobby { padding:0; }

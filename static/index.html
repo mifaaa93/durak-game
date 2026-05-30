@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Дурень</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="/static/style.css?v=7">
+<link rel="stylesheet" href="/static/style.css?v=8">
 </head>
 <body>
 
@@ -14,7 +14,17 @@
   <div class="logo">♠ ДУРЕНЬ ♠</div>
   <div class="logo-sub">Карткова гра</div>
   <div class="join-card">
-    <button class="btn-gold" onclick="createAndJoin()">🃏 Створити гру</button>
+    <div class="create-section">
+      <div class="create-label">Гравців у грі</div>
+      <div class="player-count-row" id="player-count-row">
+        <button class="cnt-btn active" onclick="selectCount(this,2)">2</button>
+        <button class="cnt-btn" onclick="selectCount(this,3)">3</button>
+        <button class="cnt-btn" onclick="selectCount(this,4)">4</button>
+        <button class="cnt-btn" onclick="selectCount(this,5)">5</button>
+        <button class="cnt-btn" onclick="selectCount(this,6)">6</button>
+      </div>
+      <button class="btn-gold" onclick="createAndJoin()">🃏 Створити гру</button>
+    </div>
     <div class="join-divider">— або увійти за кодом —</div>
     <input id="inp-room" class="field-input" type="text" placeholder="Наприклад: AB12CD" maxlength="8" style="text-transform:uppercase;margin-bottom:0">
     <button class="btn-outline" style="margin-top:8px" onclick="joinRoom()">Увійти →</button>
@@ -78,6 +88,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="/static/game.js?v=7"></script>
+<script src="/static/game.js?v=8"></script>
 </body>
 </html>
