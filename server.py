@@ -21,7 +21,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def root():
-    return FileResponse("static/index.html")
+    return FileResponse(
+        "static/index.html",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
 
 # ── Хранилище комнат ──────────────────────────────────────────────────────────
 rooms: dict[str, "Room"] = {}
