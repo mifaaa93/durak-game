@@ -11,25 +11,25 @@ import string
 from contextlib import asynccontextmanager
 from typing import Optional
 import httpx
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-# ── Telegram bot (polling, запускається всередині FastAPI event loop) ──────────
+# ── Telegram bot (webhook mode) ───────────────────────────────────────────────
 _bot_app = None
 
 async def _start_bot():
     global _bot_app
-    bot_token = os.getenv("BOT_TOKEN")
+    bot_token = os.getenv("BOT_TOKEN", "").strip()
     if not bot_token:
         return
     try:
         from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
         from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-        server_url = os.getenv("SERVER_URL")
-        mini_app_url = os.getenv("MINI_APP_URL")
+        server_url = os.getenv("SERVER_URL", "").strip().rstrip("/")
+        mini_app_url = os.getenv("MINI_APP_URL", "").strip().rstrip("/")
         if not mini_app_url:
             print("[bot] SERVER_URL / MINI_APP_URL не задано — бот запущено без web_app кнопок")
 
@@ -94,14 +94,24 @@ async def _start_bot():
                 reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None,
             )
 
-        _bot_app = Application.builder().token(bot_token).build()
+        # updater=None — відключаємо polling, використовуємо webhook
+        _bot_app = Application.builder().token(bot_token).updater(None).build()
         _bot_app.add_handler(CommandHandler("start", cmd_start))
         _bot_app.add_handler(CommandHandler("join", cmd_join))
         _bot_app.add_handler(CallbackQueryHandler(on_callback))
         await _bot_app.initialize()
-        await _bot_app.bot.delete_webhook(drop_pending_updates=True)
         await _bot_app.start()
-        await _bot_app.updater.start_polling(drop_pending_updates=True)
+
+        if server_url:
+            webhook_url = f"{server_url}/telegram/webhook"
+            await _bot_app.bot.set_webhook(
+                url=webhook_url,
+                drop_pending_updates=True,
+                allowed_updates=["message", "callback_query"],
+            )
+            print(f"[bot] Webhook встановлено: {webhook_url}")
+        else:
+            print("[bot] SERVER_URL не задано — webhook не встановлено")
     except Exception as e:
         print(f"[bot] не вдалось запустити: {e}")
 
@@ -109,7 +119,7 @@ async def _stop_bot():
     global _bot_app
     if _bot_app:
         try:
-            await _bot_app.updater.stop()
+            await _bot_app.bot.delete_webhook()
             await _bot_app.stop()
             await _bot_app.shutdown()
         except Exception:
@@ -124,6 +134,16 @@ async def lifespan(fastapi_app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+@app.post("/telegram/webhook")
+async def telegram_webhook(request: Request):
+    if _bot_app is None:
+        return {"ok": False}
+    from telegram import Update
+    data = await request.json()
+    update = Update.de_json(data, _bot_app.bot)
+    await _bot_app.process_update(update)
+    return {"ok": True}
 
 # ── Статика (index.html) ──────────────────────────────────────────────────────
 app.mount("/static", StaticFiles(directory="static"), name="static")
