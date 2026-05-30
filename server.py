@@ -99,6 +99,7 @@ async def _start_bot():
         _bot_app.add_handler(CommandHandler("join", cmd_join))
         _bot_app.add_handler(CallbackQueryHandler(on_callback))
         await _bot_app.initialize()
+        await _bot_app.bot.delete_webhook(drop_pending_updates=True)
         await _bot_app.start()
         await _bot_app.updater.start_polling(drop_pending_updates=True)
     except Exception as e:
