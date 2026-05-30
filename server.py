@@ -269,6 +269,7 @@ class Room:
             players_view.append({
                 "id": p["id"],
                 "name": p["name"],
+                "photo_url": p.get("photo_url", ""),
                 "card_count": len(p["hand"]),
                 "hand": p["hand"] if is_me else [],
                 "out": p["out"],
@@ -318,7 +319,7 @@ class Room:
             rooms.pop(self.room_id, None)
 
     # ── Вхід у кімнату ────────────────────────────────────────────────────────
-    async def join(self, player_id: str, name: str, ws: WebSocket):
+    async def join(self, player_id: str, name: str, ws: WebSocket, photo_url: str = ""):
         task = self.disconnect_tasks.pop(player_id, None)
         if task:
             task.cancel()
@@ -328,7 +329,7 @@ class Room:
             if len(self.players) >= self.max_players:
                 await ws.send_text(json.dumps({"type": "error", "msg": "Кімната заповнена"}))
                 return
-            player = {"id": player_id, "name": name, "hand": [], "out": False, "finish_pos": None}
+            player = {"id": player_id, "name": name, "photo_url": photo_url, "hand": [], "out": False, "finish_pos": None}
             self.players.append(player)
             if not self.host_id:
                 self.host_id = player_id
@@ -727,8 +728,9 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: 
         await ws.close()
         return
 
+    photo_url = ws.query_params.get("photo_url", "")
     room = rooms[room_id]
-    await room.join(player_id, name, ws)
+    await room.join(player_id, name, ws, photo_url)
 
     try:
         while True:

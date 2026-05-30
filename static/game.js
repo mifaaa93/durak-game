@@ -4,7 +4,7 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.expand(); tg.ready(); }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let ws = null, myId = null, myName = '', roomId = '';
+let ws = null, myId = null, myName = '', myPhoto = '', roomId = '';
 let intentionalClose = false;
 let gameState = null;
 let selectedHandCard = null;
@@ -103,6 +103,7 @@ window.onload = () => {
     const u = tg.initDataUnsafe.user;
     myName = u.first_name || u.username || 'Гравець';
     myId = String(u.id);
+    myPhoto = u.photo_url || '';
   } else {
     myId = 'user_'+Math.random().toString(36).slice(2,8);
     myName = 'Dev_' + myId.slice(-4);
@@ -143,7 +144,8 @@ function joinRoom() {
 function connectWS() {
   intentionalClose = false;
   if (ws) { try { ws.close(); } catch(e){} }
-  ws = new WebSocket(`${SERVER}/ws/${roomId}/${myId}/${encodeURIComponent(myName)}`);
+  const photoParam = myPhoto ? `?photo_url=${encodeURIComponent(myPhoto)}` : '';
+  ws = new WebSocket(`${SERVER}/ws/${roomId}/${myId}/${encodeURIComponent(myName)}${photoParam}`);
   ws.onopen = () => { showScreen('s-lobby'); playSound('join'); };
   ws.onmessage = e => handleMsg(JSON.parse(e.data));
   ws.onerror = () => toast('Помилка підключення');
@@ -197,6 +199,13 @@ function applyState() {
   document.getElementById('msg-bar').textContent = s.message||'';
 }
 
+function playerAvatar(p, cls = 'player-avatar') {
+  if (p.photo_url) {
+    return `<img class="${cls}" src="${esc(p.photo_url)}" alt="${esc(p.name[0].toUpperCase())}" onerror="this.outerHTML='<div class=\\'${cls}\\'>${esc(p.name[0].toUpperCase())}</div>'">`;
+  }
+  return `<div class="${cls}">${p.name[0].toUpperCase()}</div>`;
+}
+
 // ── LOBBY ─────────────────────────────────────────────────────────────────────
 function renderLobby() {
   showScreen('s-lobby');
@@ -204,7 +213,7 @@ function renderLobby() {
   document.getElementById('lobby-room-id').textContent='Кімната: '+s.room_id;
   document.getElementById('player-list').innerHTML=s.players.map(p=>`
     <div class="player-item">
-      <div class="player-avatar">${p.name[0].toUpperCase()}</div>
+      ${playerAvatar(p)}
       <div class="player-info">
         <div class="player-name">${esc(p.name)}${p.id===myId?' (ви)':''}</div>
         <div class="player-tag">${p.id===s.host_id?'👑 Хост':'Гравець'}</div>
@@ -256,6 +265,7 @@ function renderOpponents() {
     else if(p.id===s.defender_id) cls+=' is-defender';
     const role=p.out?'вийшов':(p.id===s.attacker_id?'атакує':(p.id===s.defender_id?'відбиває':''));
     return `<div class="${cls}">
+      ${playerAvatar(p, 'opp-avatar')}
       <div class="opp-name">${esc(p.name)}${p.id===myId?' (я)':''}</div>
       <div class="opp-count">${p.out?'✓':p.card_count}</div>
       <div class="opp-role">${role}</div>
