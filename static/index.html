@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Дурень</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="/static/style.css?v=6">
+<link rel="stylesheet" href="/static/style.css?v=7">
 </head>
 <body>
 
@@ -29,7 +29,10 @@
 <div id="s-lobby" class="screen">
   <div class="lobby-header">
     <div class="lobby-title">♠ Дурень — Лобі</div>
-    <div class="lobby-room" id="lobby-room-id">Кімната: —</div>
+    <div class="lobby-room-row">
+      <div class="lobby-room" id="lobby-room-id">Кімната: —</div>
+      <div class="lobby-count" id="lobby-player-count">0 / — гравців</div>
+    </div>
   </div>
   <div class="player-list" id="player-list"></div>
   <div class="lobby-actions">
@@ -75,6 +78,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="/static/game.js?v=6"></script>
+<script src="/static/game.js?v=7"></script>
 </body>
 </html>

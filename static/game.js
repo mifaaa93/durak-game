@@ -206,7 +206,8 @@ function playerAvatar(p, cls = 'player-avatar') {
 function renderLobby() {
   showScreen('s-lobby');
   const s=gameState;
-  document.getElementById('lobby-room-id').textContent='Кімната: '+s.room_id;
+  document.getElementById('lobby-room-id').textContent=`Кімната: ${s.room_id}`;
+  document.getElementById('lobby-player-count').textContent=`${s.players.length} / ${s.max_players} гравців`;
   document.getElementById('player-list').innerHTML=s.players.map(p=>`
     <div class="player-item">
       ${playerAvatar(p)}

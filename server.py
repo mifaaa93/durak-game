@@ -306,6 +306,7 @@ class Room:
             "phase": self.phase,
             "my_id": viewer_id,
             "players": players_view,
+            "max_players": self.max_players,
             "deck_count": len(self.deck),
             "trump_suit": self.trump_suit,
             "trump_card": self.trump_card,
