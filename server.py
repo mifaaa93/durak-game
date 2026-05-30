@@ -14,7 +14,7 @@ import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 
 # ── Telegram bot (webhook mode) ───────────────────────────────────────────────
 _bot_app = None
@@ -178,6 +178,31 @@ async def telegram_webhook(request: Request):
         print(f"[webhook] помилка process_update: {e!r}")
     return {"ok": True}
 
+# ── Аватарки ──────────────────────────────────────────────────────────────────
+_photo_cache: dict[str, str] = {}  # user_id -> file URL or ""
+
+@app.get("/user_photo/{user_id}")
+async def user_photo(user_id: str):
+    if _bot_app is None:
+        return Response(status_code=204)
+    if user_id in _photo_cache:
+        url = _photo_cache[user_id]
+        return RedirectResponse(url) if url else Response(status_code=204)
+    try:
+        photos = await _bot_app.bot.get_user_profile_photos(int(user_id), limit=1)
+        if not photos.photos:
+            _photo_cache[user_id] = ""
+            return Response(status_code=204)
+        file_id = photos.photos[0][-1].file_id
+        f = await _bot_app.bot.get_file(file_id)
+        url = f.file_path
+        _photo_cache[user_id] = url
+        return RedirectResponse(url)
+    except Exception as e:
+        print(f"[photo] {user_id}: {e}")
+        _photo_cache[user_id] = ""
+        return Response(status_code=204)
+
 # ── Статика (index.html) ──────────────────────────────────────────────────────
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -269,7 +294,6 @@ class Room:
             players_view.append({
                 "id": p["id"],
                 "name": p["name"],
-                "photo_url": p.get("photo_url", ""),
                 "card_count": len(p["hand"]),
                 "hand": p["hand"] if is_me else [],
                 "out": p["out"],
@@ -319,7 +343,7 @@ class Room:
             rooms.pop(self.room_id, None)
 
     # ── Вхід у кімнату ────────────────────────────────────────────────────────
-    async def join(self, player_id: str, name: str, ws: WebSocket, photo_url: str = ""):
+    async def join(self, player_id: str, name: str, ws: WebSocket):
         task = self.disconnect_tasks.pop(player_id, None)
         if task:
             task.cancel()
@@ -329,7 +353,7 @@ class Room:
             if len(self.players) >= self.max_players:
                 await ws.send_text(json.dumps({"type": "error", "msg": "Кімната заповнена"}))
                 return
-            player = {"id": player_id, "name": name, "photo_url": photo_url, "hand": [], "out": False, "finish_pos": None}
+            player = {"id": player_id, "name": name, "hand": [], "out": False, "finish_pos": None}
             self.players.append(player)
             if not self.host_id:
                 self.host_id = player_id
@@ -728,9 +752,8 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, player_id: str, name: 
         await ws.close()
         return
 
-    photo_url = ws.query_params.get("photo_url", "")
     room = rooms[room_id]
-    await room.join(player_id, name, ws, photo_url)
+    await room.join(player_id, name, ws)
 
     try:
         while True:

@@ -4,7 +4,7 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.expand(); tg.ready(); }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let ws = null, myId = null, myName = '', myPhoto = '', roomId = '';
+let ws = null, myId = null, myName = '', roomId = '';
 let intentionalClose = false;
 let gameState = null;
 let selectedHandCard = null;
@@ -103,7 +103,6 @@ window.onload = () => {
     const u = tg.initDataUnsafe.user;
     myName = u.first_name || u.username || 'Гравець';
     myId = String(u.id);
-    myPhoto = u.photo_url || '';
   } else {
     myId = 'user_'+Math.random().toString(36).slice(2,8);
     myName = 'Dev_' + myId.slice(-4);
@@ -144,8 +143,7 @@ function joinRoom() {
 function connectWS() {
   intentionalClose = false;
   if (ws) { try { ws.close(); } catch(e){} }
-  const photoParam = myPhoto ? `?photo_url=${encodeURIComponent(myPhoto)}` : '';
-  ws = new WebSocket(`${SERVER}/ws/${roomId}/${myId}/${encodeURIComponent(myName)}${photoParam}`);
+  ws = new WebSocket(`${SERVER}/ws/${roomId}/${myId}/${encodeURIComponent(myName)}`);
   ws.onopen = () => { showScreen('s-lobby'); playSound('join'); };
   ws.onmessage = e => handleMsg(JSON.parse(e.data));
   ws.onerror = () => toast('Помилка підключення');
@@ -200,10 +198,8 @@ function applyState() {
 }
 
 function playerAvatar(p, cls = 'player-avatar') {
-  if (p.photo_url) {
-    return `<img class="${cls}" src="${esc(p.photo_url)}" alt="${esc(p.name[0].toUpperCase())}" onerror="this.outerHTML='<div class=\\'${cls}\\'>${esc(p.name[0].toUpperCase())}</div>'">`;
-  }
-  return `<div class="${cls}">${p.name[0].toUpperCase()}</div>`;
+  const initial = p.name[0].toUpperCase();
+  return `<img class="${cls}" src="/user_photo/${p.id}" alt="${initial}" onerror="this.outerHTML='<div class=\\'${cls}\\'>${initial}</div>'">`;
 }
 
 // ── LOBBY ─────────────────────────────────────────────────────────────────────
