@@ -508,8 +508,8 @@ def card_key_rank(c: dict) -> str:
 
 # ── Telegram-повідомлення про реванш ─────────────────────────────────────────
 async def send_tg_invite(to_player_id: str, from_player_name: str, room_id: str):
-    bot_token = os.getenv("BOT_TOKEN", "8849583992:AAGhnFbaokH4evsWAKljFMnX1CKM4Ws-Zt4")
-    server_url = os.getenv("SERVER_URL", "https://durak-game-production-affa.up.railway.app")
+    bot_token = os.getenv("BOT_TOKEN")
+    server_url = os.getenv("SERVER_URL")
     if not bot_token:
         return
     try:
