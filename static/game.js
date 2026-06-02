@@ -7,6 +7,7 @@ if (tg) { tg.expand(); tg.ready(); }
 let ws = null, myId = null, myName = '', roomId = '';
 let intentionalClose = false;
 let gameState = null;
+let pingInterval = null;
 let selectedHandCard = null;
 let surrenderConfirm = false;
 let prevPairsSig = null, prevPhase = null;
@@ -149,20 +150,33 @@ function joinRoom() {
 }
 function connectWS() {
   intentionalClose = false;
+  if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
   if (ws) { try { ws.close(); } catch(e){} }
   ws = new WebSocket(`${SERVER}/ws/${roomId}/${myId}/${encodeURIComponent(myName)}`);
-  ws.onopen = () => { showScreen('s-lobby'); playSound('join'); };
+  ws.onopen = () => { playSound('join'); };
   ws.onmessage = e => handleMsg(JSON.parse(e.data));
   ws.onerror = () => toast('Помилка підключення');
   ws.onclose = () => { if (!intentionalClose) { toast("З'єднання втрачено..."); setTimeout(connectWS,2000); } };
-  setInterval(()=>{ if(ws?.readyState===1) ws.send(JSON.stringify({action:'ping'})); },25000);
+  pingInterval = setInterval(()=>{ if(ws?.readyState===1) ws.send(JSON.stringify({action:'ping'})); },25000);
 }
 function send(obj) { if(ws?.readyState===1) ws.send(JSON.stringify(obj)); }
 
 // ── MESSAGES ──────────────────────────────────────────────────────────────────
 function handleMsg(msg) {
   if (msg.type==='state') { gameState=msg.state; applyState(); }
-  else if (msg.type==='error') { playSound('error'); toast(msg.msg); }
+  else if (msg.type==='error') {
+    playSound('error');
+    toast(msg.msg);
+    if (msg.msg === 'Кімнату не знайдено') {
+      intentionalClose = true;
+      if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
+      if (ws) { try { ws.close(); } catch(e){} ws = null; }
+      roomId = '';
+      document.getElementById('inp-room').value = '';
+      showScreen('s-join');
+      startRoomsRefresh();
+    }
+  }
   else if (msg.type==='player_disconnected') { toast('Гравець відключився'); }
 }
 
@@ -234,6 +248,7 @@ function leaveRoom() {
   playSound('leave');
   send({action:'leave_room'});
   intentionalClose = true;
+  if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
   if (ws) { try { ws.close(); } catch(e){} ws=null; }
   roomId='';
   document.getElementById('inp-room').value='';
@@ -552,6 +567,7 @@ function backToLobby() { send({action:'rematch'}); }
 function goHome() {
   send({action:'leave_end'});
   intentionalClose = true;
+  if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
   if (ws) { try { ws.close(); } catch(e){} ws=null; }
   roomId='';
   document.getElementById('inp-room').value='';
